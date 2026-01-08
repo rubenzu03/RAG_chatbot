@@ -1,0 +1,26 @@
+package com.rubenzu03.rag_chatbot.controller;
+
+import com.rubenzu03.rag_chatbot.rag.AIService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+
+@Controller
+public class AIController {
+    private final AIService aiService;
+
+    @Autowired
+    public AIController(AIService aiService) {
+        this.aiService = aiService;
+    }
+
+    @GetMapping("/api/ai/test")
+    public ResponseEntity<String > askQuery(@RequestParam(name = "query") String query){
+        String response = aiService.simpleQueryTest(query);
+        return ResponseEntity.ok(response);
+    }
+}
