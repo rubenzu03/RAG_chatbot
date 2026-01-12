@@ -32,6 +32,7 @@
         <grpc.version>1.78.0</grpc.version>
         <protobuf.version>4.33.2</protobuf.version>
         <lang3.version>3.20.0</lang3.version>
+        <okio.version>3.16.4</okio.version>
     </properties>
     <dependencies>
         <dependency>
@@ -89,6 +90,10 @@
             <artifactId>lingua</artifactId>
             <version>1.2.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.squareup.okio</groupId>
+            <artifactId>okio</artifactId>
+        </dependency>
     </dependencies>
     <dependencyManagement>
         <dependencies>
@@ -114,7 +119,11 @@
                 <artifactId>commons-lang3</artifactId>
                 <version>${lang3.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${okio.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
