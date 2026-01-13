@@ -7,10 +7,12 @@ import com.rubenzu03.rag_chatbot.rag.modules.RewriteQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.TranslationQueryModule;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.rag.Query;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +23,9 @@ public class AIService {
     private final ChatClient chatClient;
     private final ChatModel chatModel;
     private final VectorDatabaseLoader vectordb;
+
+    @Value("${VECTOR_DATABASE_FILES_DIR:}")
+    private String vectorDatabaseFilesDir;
 
 
 
@@ -58,7 +63,12 @@ public class AIService {
         finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
         finalQuery = translationQueryModule.translateQuery(finalQuery.text());
         List<Query> expandedQueries = queryExpansionModule.expandQueries(finalQuery.text());
-        //TODO: Retrieve from vectordb
+        // Retrieve from vectordb using the configured environment variable / property
+        if (vectorDatabaseFilesDir == null || vectorDatabaseFilesDir.isBlank()) {
+            throw new IllegalStateException("VECTOR_DATABASE_FILES_DIR is not set. Please set the environment variable or application property.");
+        }
+        List<Document> docs = vectordb.getAllDocuments(vectorDatabaseFilesDir);
+        // TODO: use `docs` to perform retrieval and construct a RAG response
         return finalQuery.text();
     }
 
