@@ -18,7 +18,7 @@ public class TranslationQueryModule {
         this.chatClientBuilder = chatClientBuilder;
     }
 
-    public Query TranslateQuery(String rewrittenQuery){
+    public Query translateQuery(String rewrittenQuery){
         Query query = new Query(rewrittenQuery);
 
         String detectedLanguage = detectLanguage(rewrittenQuery);

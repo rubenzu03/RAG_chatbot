@@ -18,9 +18,15 @@ public class AIController {
         this.aiService = aiService;
     }
 
-    @GetMapping("/api/ai/test")
-    public ResponseEntity<String > askQuery(@RequestParam(name = "query") String query){
+    @PostMapping("/api/ai/test")
+    public ResponseEntity<String> askQuery(@RequestParam(name = "query") String query){
         String response = aiService.simpleQueryTest(query);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/api/ai/test/ragquery")
+    public ResponseEntity<String> askQueryUsingRAG(@RequestParam(name="query") String query){
+        String response = aiService.RAGQueryTest(query);
         return ResponseEntity.ok(response);
     }
 }
