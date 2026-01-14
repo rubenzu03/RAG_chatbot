@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.rag.modules;
+package com.rubenzu03.rag_chatbot.rag.modules.preretrieve;
 
 import com.github.pemistahl.lingua.api.Language;
 import com.github.pemistahl.lingua.api.LanguageDetector;

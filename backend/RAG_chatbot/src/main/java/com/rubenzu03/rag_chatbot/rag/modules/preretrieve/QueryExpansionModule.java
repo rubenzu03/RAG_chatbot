@@ -1,11 +1,10 @@
-package com.rubenzu03.rag_chatbot.rag.modules;
+package com.rubenzu03.rag_chatbot.rag.modules.preretrieve;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.preretrieval.query.expansion.MultiQueryExpander;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service

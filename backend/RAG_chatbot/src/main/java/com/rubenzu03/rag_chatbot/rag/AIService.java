@@ -1,10 +1,10 @@
 package com.rubenzu03.rag_chatbot.rag;
 
 import com.rubenzu03.rag_chatbot.VectorDatabaseLoader;
-import com.rubenzu03.rag_chatbot.rag.modules.QueryExpansionModule;
-import com.rubenzu03.rag_chatbot.rag.modules.QueryTransformerModule;
-import com.rubenzu03.rag_chatbot.rag.modules.RewriteQueryModule;
-import com.rubenzu03.rag_chatbot.rag.modules.TranslationQueryModule;
+import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryExpansionModule;
+import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryTransformerModule;
+import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.RewriteQueryModule;
+import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.TranslationQueryModule;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
@@ -69,6 +69,7 @@ public class AIService {
         }
         List<Document> docs = vectordb.getAllDocuments(vectorDatabaseFilesDir);
         // TODO: use `docs` to perform retrieval and construct a RAG response
+
         return finalQuery.text();
     }
 
