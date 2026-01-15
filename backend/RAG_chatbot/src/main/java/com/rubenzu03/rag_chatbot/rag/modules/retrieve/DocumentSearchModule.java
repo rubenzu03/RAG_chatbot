@@ -1,6 +1,6 @@
 package com.rubenzu03.rag_chatbot.rag.modules.retrieve;
 
-import com.rubenzu03.rag_chatbot.VectorDatabaseLoader;
+import com.rubenzu03.rag_chatbot.persistence.VectorDatabaseLoader;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;

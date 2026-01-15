@@ -1,9 +1,7 @@
-package com.rubenzu03.rag_chatbot;
-
+package com.rubenzu03.rag_chatbot.persistence;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -12,24 +10,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 import java.util.Map;
+import java.util.stream.Stream;
 
 @Service
-public class VectorDatabaseLoader {
+public class VectorDatabaseInserter {
 
-    private final VectorStore vectorStore;
     private List<Document> documents;
-
-    @Autowired
-    public VectorDatabaseLoader(VectorStore vectorStore) {
-        this.vectorStore = vectorStore;
-    }
-
-    public VectorStore getVectorStore() {
-        return vectorStore;
-    }
-
+    private VectorStore vectorStore;
 
     public List<Document> getAllDocuments(String directoryPath) {
         Path base = Paths.get(directoryPath);
@@ -56,13 +44,10 @@ public class VectorDatabaseLoader {
         List<Path> files = new ArrayList<>();
         try (Stream<Path> stream = Files.walk(directory)) {
             stream.filter(Files::isRegularFile)
-                  .forEach(files::add);
+                    .forEach(files::add);
         } catch (IOException e) {
             throw new RuntimeException("Failed to list files in directory: " + directory, e);
         }
         return files;
     }
 }
-
-
-

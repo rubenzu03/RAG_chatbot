@@ -16,11 +16,12 @@ public class QueryExpansionModule {
         this.chatClientBuilder = chatClientBuilder;
     }
 
-    public List<Query> expandQueries(String query){
+    public List<Query> expandQueries(Query query){
         MultiQueryExpander queryExpander = MultiQueryExpander.builder()
                 .chatClientBuilder(chatClientBuilder)
                 .numberOfQueries(10).build();
 
-        return queryExpander.expand(new Query(query));
+        List<Query> expandedQueries = queryExpander.expand(query);
+        return expandedQueries;
     }
 }

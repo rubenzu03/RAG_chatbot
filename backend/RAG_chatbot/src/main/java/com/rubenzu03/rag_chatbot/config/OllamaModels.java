@@ -20,7 +20,7 @@ public class OllamaModels {
                 .defaultOptions(
                         OllamaChatOptions.builder()
                                 .model(OllamaModel.LLAMA3_1)
-                                .temperature(0.9)
+                                .temperature(0.0)
                                 .build())
                 .build();
 
