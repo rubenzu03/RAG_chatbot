@@ -1,6 +1,5 @@
-package com.rubenzu03.rag_chatbot.rag;
+package com.rubenzu03.rag_chatbot.service;
 
-import com.rubenzu03.rag_chatbot.persistence.VectorDatabaseLoader;
 import com.rubenzu03.rag_chatbot.rag.modules.postretrieve.DocumentPostProcessingModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryExpansionModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryTransformerModule;
@@ -27,7 +26,6 @@ public class AIService {
 
     private final ChatClient chatClient;
     private final ChatModel chatModel;
-    private final VectorDatabaseLoader vectordb;
 
     @Value("${VECTOR_DATABASE_FILES_DIR:}")
     private String vectorDatabaseFilesDir;

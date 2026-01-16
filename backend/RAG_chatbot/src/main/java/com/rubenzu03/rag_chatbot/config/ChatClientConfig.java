@@ -1,6 +1,5 @@
 package com.rubenzu03.rag_chatbot.config;
 
-import com.rubenzu03.rag_chatbot.persistence.VectorDatabaseLoader;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.beans.factory.annotation.Autowired;

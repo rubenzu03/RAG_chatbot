@@ -1,6 +1,5 @@
 package com.rubenzu03.rag_chatbot.rag.modules.postretrieve;
 
-import com.rubenzu03.rag_chatbot.persistence.VectorDatabaseLoader;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.vectorstore.VectorStore;

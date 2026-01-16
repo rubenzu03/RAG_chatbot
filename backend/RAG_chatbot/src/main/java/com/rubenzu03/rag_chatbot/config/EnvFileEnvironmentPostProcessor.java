@@ -23,6 +23,7 @@ public class EnvFileEnvironmentPostProcessor implements EnvironmentPostProcessor
         Map<String, Object> propertyMap = new HashMap<>();
 
         Path envPath = Paths.get(".env");
+        
         if (Files.exists(envPath)) {
             try {
                 List<String> lines = Files.readAllLines(envPath);
@@ -31,14 +32,13 @@ public class EnvFileEnvironmentPostProcessor implements EnvironmentPostProcessor
                     if (line.isEmpty() || line.startsWith("#")) {
                         continue;
                     }
-                    // support lines like: export KEY=VALUE
                     if (line.startsWith("export ")) {
                         line = line.substring(7).trim();
                     }
 
                     int idx = line.indexOf('=');
                     if (idx <= 0) {
-                        continue; // skip malformed lines
+                        continue;
                     }
 
                     String key = line.substring(0, idx).trim();
