@@ -12,14 +12,8 @@ import java.util.stream.Collectors;
 @Service
 public class DocumentPostProcessingModule {
 
-    private final VectorStore vectorStore;
-    private final VectorDatabaseLoader vectorDatabaseLoader;
-
     @Autowired
-    public DocumentPostProcessingModule(VectorDatabaseLoader vectorDatabaseLoader) {
-        this.vectorDatabaseLoader = vectorDatabaseLoader;
-        this.vectorStore = vectorDatabaseLoader.getVectorStore();
-    }
+    private VectorStore vectorStore;
 
     /**
      * Ranks and filters documents based on similarity threshold and removes duplicates

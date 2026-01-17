@@ -1,5 +1,6 @@
 package com.rubenzu03.rag_chatbot.service;
 
+import com.rubenzu03.rag_chatbot.config.ChatClientConfig;
 import com.rubenzu03.rag_chatbot.rag.modules.postretrieve.DocumentPostProcessingModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryExpansionModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryTransformerModule;
@@ -24,13 +25,13 @@ import java.util.stream.Collectors;
 @Service
 public class AIService {
 
-    private final ChatClient chatClient;
-    private final ChatModel chatModel;
-
     @Value("${VECTOR_DATABASE_FILES_DIR:}")
     private String vectorDatabaseFilesDir;
 
+    @Autowired
+    private VectorStore vectordb;
 
+    private final ChatClient chatClient;
 
     private final QueryTransformerModule queryTransformerModule;
     private final RewriteQueryModule rewriteQueryModule;
@@ -39,21 +40,13 @@ public class AIService {
     private final DocumentPostProcessingModule documentPostProcessingModule;
     private final DocumentJoinModule documentJoinModule;
 
-    private final String RAG_SYSTEM_PROMPT = """
-            You are an advanced AI assistant that provides accurate and concise answers to user queries by leveraging relevant information from a provided context. 
-            When answering, ensure that you only use the information available in the context. If the context does not contain sufficient information to answer the query, 
-            respond with "I'm sorry, I don't have enough information to answer that question." Do not fabricate answers or use information outside of the provided context.
-            """;
-
 
     @Autowired
     public AIService(@Qualifier("llama3ChatClient") ChatClient chatClient,
-                     OllamaChatModel chatModel, VectorDatabaseLoader vectorDatabase, TranslationQueryModule translationQueryModule,
+                     TranslationQueryModule translationQueryModule,
                      RewriteQueryModule rewriteQueryModule, QueryTransformerModule queryTransformerModule, QueryExpansionModule queryExpansionModule,
                      DocumentPostProcessingModule documentPostProcessingModule, DocumentJoinModule documentJoinModule) {
         this.chatClient = chatClient;
-        this.chatModel = chatModel;
-        this.vectordb = vectorDatabase;
         this.translationQueryModule = translationQueryModule;
         this.rewriteQueryModule = rewriteQueryModule;
         this.queryTransformerModule = queryTransformerModule;
@@ -83,18 +76,11 @@ public class AIService {
             expandedQueries = allQueries;
         }
 
-        // Retrieve from vectordb using the configured environment variable / property
-        if (vectorDatabaseFilesDir == null || vectorDatabaseFilesDir.isBlank()) {
-            throw new IllegalStateException("VECTOR_DATABASE_FILES_DIR is not set. Please set the environment variable or application property.");
-        }
-
-        // Step 3: Retrieve - Use VectorStore for similarity search with each expanded query
-        VectorStore vectorStore = vectordb.getVectorStore();
         Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
 
         for (Query expandedQuery : expandedQueries) {
             // Retrieve documents for each expanded query using similarity search
-            List<Document> retrievedDocs = vectorStore.similaritySearch(
+            List<Document> retrievedDocs = vectordb.similaritySearch(
                 SearchRequest.builder()
                     .query(expandedQuery.text())
                     .topK(10)  // Retrieve top 10 for each query
@@ -127,8 +113,9 @@ public class AIService {
                 .collect(Collectors.joining("\n\n"));
 
         // Generate response using ChatClient with context
+
         String response = chatClient.prompt()
-                .system(RAG_SYSTEM_PROMPT)
+                .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
                 .user(u -> u
                     .text("Context:\n{context}\n\nQuestion: {question}")
                     .param("context", context)

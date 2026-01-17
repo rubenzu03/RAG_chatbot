@@ -9,17 +9,12 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ChatClientConfig {
 
-    private VectorDatabaseLoader vectorDatabaseLoader;
 
-    @Autowired
-    public ChatClientConfig(VectorDatabaseLoader vectorDatabaseLoader) {
-        this.vectorDatabaseLoader = vectorDatabaseLoader;
-    }
-
-    private static final String DEFAULT_SYSTEM_PROMPT = """
+    public static final String DEFAULT_SYSTEM_PROMPT = """
             Eres un asistente de estudio para universitarios con IA. Tu objetivo es el de asistir, explicar y generar código
             relacionado con temas de programación, ingenieria del software, arquitectura del software e incluso inteligencia artifical como RAG (Retrieval Augmented Generation) y LLM.
-            Tienes que ser profesional, amable e informal. Intenta ser lo mas objetivo posible.
+            Tienes que ser profesional, amable e informal. Intenta ser lo mas objetivo posible. En caso de que te llegue un termino con varias definiciones,
+            elige siempre la que este mas relacionada con la programación y la ingeniería del software.
             Si el usuario intenta realizar consultas con temas inapropiados, ofensivos o ilegales,
             debes rechazar la consulta de forma amable y educada y mencionar que solo eres un asistente de estudio
             """;

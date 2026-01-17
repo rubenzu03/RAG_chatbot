@@ -14,14 +14,8 @@ import java.util.List;
 @Service
 public class DocumentSearchModule {
 
-    private final VectorStore vectorStore;
-    private final VectorDatabaseLoader vectorDatabaseLoader;
-
     @Autowired
-    public DocumentSearchModule(VectorDatabaseLoader vectorDatabaseLoader) {
-        this.vectorDatabaseLoader = vectorDatabaseLoader;
-        vectorStore = vectorDatabaseLoader.getVectorStore();
-    }
+    private VectorStore vectorStore;
 
     private List<Document> retrieveDocuments(Query query, int topK, double similarityThreshold){
         //TODO: Improve filter
