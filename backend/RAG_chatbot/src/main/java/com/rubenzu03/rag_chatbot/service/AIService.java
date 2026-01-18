@@ -7,6 +7,7 @@ import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryTransformerModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.RewriteQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.TranslationQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentJoinModule;
+import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
@@ -37,20 +38,23 @@ public class AIService {
     private final RewriteQueryModule rewriteQueryModule;
     private final TranslationQueryModule translationQueryModule;
     private final QueryExpansionModule queryExpansionModule;
-    private final DocumentPostProcessingModule documentPostProcessingModule;
+    private final DocumentSearchModule documentSearchModule;
     private final DocumentJoinModule documentJoinModule;
+    private final DocumentPostProcessingModule documentPostProcessingModule;
 
 
     @Autowired
     public AIService(@Qualifier("llama3ChatClient") ChatClient chatClient,
                      TranslationQueryModule translationQueryModule,
                      RewriteQueryModule rewriteQueryModule, QueryTransformerModule queryTransformerModule, QueryExpansionModule queryExpansionModule,
+                     DocumentSearchModule documentSearchModule,
                      DocumentPostProcessingModule documentPostProcessingModule, DocumentJoinModule documentJoinModule) {
         this.chatClient = chatClient;
         this.translationQueryModule = translationQueryModule;
         this.rewriteQueryModule = rewriteQueryModule;
         this.queryTransformerModule = queryTransformerModule;
         this.queryExpansionModule = queryExpansionModule;
+        this.documentSearchModule = documentSearchModule;
         this.documentPostProcessingModule = documentPostProcessingModule;
         this.documentJoinModule = documentJoinModule;
     }
@@ -69,24 +73,25 @@ public class AIService {
         // Step 2: Query expansion - Generate multiple query variations
         List<Query> expandedQueries = queryExpansionModule.expandQueries(finalQuery);
 
-        // Add the original final query to expanded queries if not already included
         if (!expandedQueries.contains(finalQuery)) {
             List<Query> allQueries = new ArrayList<>(expandedQueries);
-            allQueries.addFirst(finalQuery); // Add original as first query
+            allQueries.addFirst(finalQuery);
             expandedQueries = allQueries;
         }
 
         Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
 
         for (Query expandedQuery : expandedQueries) {
+
+            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 10, 0.7);
             // Retrieve documents for each expanded query using similarity search
-            List<Document> retrievedDocs = vectordb.similaritySearch(
+            /*List<Document> retrievedDocs = vectordb.similaritySearch(
                 SearchRequest.builder()
                     .query(expandedQuery.text())
                     .topK(10)  // Retrieve top 10 for each query
                     .build()
             );
-
+*/
             // Store results - wrap in a List<List<Document>> as expected by DocumentJoiner
             queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
         }

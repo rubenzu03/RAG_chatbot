@@ -6,10 +6,13 @@ import io.milvus.param.ConnectParam;
 import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.FieldType;
 import io.milvus.param.collection.HasCollectionParam;
+import io.milvus.param.collection.CollectionSchemaParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
 import io.milvus.param.index.CreateIndexParam;
 import io.milvus.param.collection.LoadCollectionParam;
+
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,11 +44,11 @@ public class MilvusInitializer implements ApplicationRunner {
     @Value("${VECTOR_DATABASE_COLLECTION_NAME:chatbot}")
     private String collectionName;
 
-    @Value("${spring.ai.vectorstore.milvus.embedding-dimension:1536}")
+    @Value("${spring.ai.vectorstore.milvus.embedding-dimension:1024}")
     private int dimension;
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args){
         log.info("Initializing Milvus collection '{}' on {}:{}", collectionName, host, port);
 
         MilvusServiceClient milvusClient = null;
@@ -58,19 +61,26 @@ public class MilvusInitializer implements ApplicationRunner {
                             .build()
             );
 
-            HasCollectionParam hasCollectionParam = HasCollectionParam.newBuilder()
-                    .withCollectionName(collectionName)
-                    .build();
-
-            boolean exists = milvusClient.hasCollection(hasCollectionParam).getData();
+            // Check if collection exists
+            boolean exists = milvusClient.hasCollection(
+                    HasCollectionParam.newBuilder()
+                            .withCollectionName(collectionName)
+                            .build()
+            ).getData();
 
             if (exists) {
-                log.info("Milvus collection '{}' already exists", collectionName);
-                return;
+                log.info("Collection '{}' exists. Dropping to ensure correct schema.", collectionName);
+                milvusClient.dropCollection(
+                        io.milvus.param.collection.DropCollectionParam.newBuilder()
+                                .withCollectionName(collectionName)
+                                .build()
+                );
+                log.info("Dropped existing collection '{}'", collectionName);
             }
 
             log.info("Creating Milvus collection '{}' with dimension {}", collectionName, dimension);
 
+            // Create schema: id (Int64 auto-generated), doc_id (VarChar), embedding (FloatVector), content (VarChar), metadata (JSON)
             FieldType idField = FieldType.newBuilder()
                     .withName("id")
                     .withDataType(DataType.Int64)
@@ -78,16 +88,16 @@ public class MilvusInitializer implements ApplicationRunner {
                     .withAutoID(true)
                     .build();
 
-            FieldType vectorField = FieldType.newBuilder()
+            FieldType docIdField = FieldType.newBuilder()
+                    .withName("doc_id")
+                    .withDataType(DataType.VarChar)
+                    .withMaxLength(36)
+                    .build();
+
+            FieldType embeddingField = FieldType.newBuilder()
                     .withName("embedding")
                     .withDataType(DataType.FloatVector)
                     .withDimension(dimension)
-                    .build();
-
-            FieldType metadataField = FieldType.newBuilder()
-                    .withName("metadata")
-                    .withDataType(DataType.VarChar)
-                    .withMaxLength(65535)
                     .build();
 
             FieldType contentField = FieldType.newBuilder()
@@ -96,34 +106,39 @@ public class MilvusInitializer implements ApplicationRunner {
                     .withMaxLength(65535)
                     .build();
 
+            FieldType metadataField = FieldType.newBuilder()
+                    .withName("metadata")
+                    .withDataType(DataType.JSON)
+                    .build();
+
+            CollectionSchemaParam schema = CollectionSchemaParam.newBuilder()
+                    .withFieldTypes(Arrays.asList(idField, docIdField, embeddingField, contentField, metadataField))
+                    .build();
+
             CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
                     .withCollectionName(collectionName)
-                    .withDescription("RAG chatbot vector embeddings collection")
-                    .addFieldType(idField)
-                    .addFieldType(vectorField)
-                    .addFieldType(metadataField)
-                    .addFieldType(contentField)
+                    .withDescription("RAG chatbot embeddings")
+                    .withSchema(schema)
                     .build();
 
             milvusClient.createCollection(createCollectionParam);
 
-            CreateIndexParam indexParam = CreateIndexParam.newBuilder()
+            // Create vector index
+            milvusClient.createIndex(CreateIndexParam.newBuilder()
                     .withCollectionName(collectionName)
                     .withFieldName("embedding")
                     .withIndexType(IndexType.IVF_FLAT)
                     .withMetricType(MetricType.COSINE)
                     .withExtraParam("{\"nlist\":1024}")
                     .withSyncMode(Boolean.TRUE)
-                    .build();
+                    .build());
 
-            milvusClient.createIndex(indexParam);
-
-            LoadCollectionParam loadParam = LoadCollectionParam.newBuilder()
+            // Load collection
+            milvusClient.loadCollection(LoadCollectionParam.newBuilder()
                     .withCollectionName(collectionName)
-                    .build();
-            milvusClient.loadCollection(loadParam);
+                    .build());
 
-            log.info("Successfully created and loaded Milvus collection '{}'", collectionName);
+            log.info("Successfully created and loaded collection '{}'", collectionName);
 
         } catch (Exception e) {
             log.error("Failed to initialize Milvus collection '{}': {}", collectionName, e.getMessage(), e);

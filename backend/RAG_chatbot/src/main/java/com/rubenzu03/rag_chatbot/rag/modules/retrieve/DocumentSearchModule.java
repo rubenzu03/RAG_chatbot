@@ -17,15 +17,15 @@ public class DocumentSearchModule {
     @Autowired
     private VectorStore vectorStore;
 
-    private List<Document> retrieveDocuments(Query query, int topK, double similarityThreshold){
+    public List<Document> retrieveDocuments(Query query, int topK, double similarityThreshold){
         //TODO: Improve filter
         DocumentRetriever retriver = VectorStoreDocumentRetriever.builder()
                 .vectorStore(vectorStore)
                 .similarityThreshold(similarityThreshold)
                 .topK(topK)
-                .filterExpression(() -> new FilterExpressionBuilder()
+                /*.filterExpression(() -> new FilterExpressionBuilder()
                         .eq("test","test")
-                        .build())
+                        .build())*/
                 .build();
         return retriver.retrieve(query);
     }
