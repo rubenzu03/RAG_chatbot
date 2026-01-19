@@ -22,4 +22,5 @@ jobs:
                       ${{ runner.os }}-maven-
 
             - name: Build with Maven
+              working-directory: backend
               run: mvn --batch-mode clean test
