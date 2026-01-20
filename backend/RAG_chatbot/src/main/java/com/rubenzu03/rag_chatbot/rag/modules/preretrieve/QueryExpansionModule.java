@@ -21,7 +21,6 @@ public class QueryExpansionModule {
                 .chatClientBuilder(chatClientBuilder)
                 .numberOfQueries(10).build();
 
-        List<Query> expandedQueries = queryExpander.expand(query);
-        return expandedQueries;
+        return queryExpander.expand(query);
     }
 }
