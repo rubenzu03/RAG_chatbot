@@ -17,13 +17,16 @@ public class QueryTransformerModule {
         this.chatClientBuilder = chatClientBuilder;
     }
 
-    public Query transformQuery(String rawQuery){
-        //TODO: add history and context
+    public Query transformQuery(String rawQuery, String sessionId){
         Query query = Query.builder()
-                .text(rawQuery).history().build();
+                .text(rawQuery)
+                .build();
 
-        QueryTransformer queryTransformer = CompressionQueryTransformer.builder().chatClientBuilder(chatClientBuilder).build();
+        QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
+                .chatClientBuilder(chatClientBuilder)
+                .build();
 
         return queryTransformer.transform(query);
     }
+
 }

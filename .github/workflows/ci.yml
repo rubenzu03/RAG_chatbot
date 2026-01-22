@@ -1,0 +1,26 @@
+name: CI-Build
+on: [push, pull_request]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Set up JDK
+              uses: actions/setup-java@v4
+              with:
+                  java-version: "21"
+                  distribution: "corretto"
+
+            - name: Cache Maven dependencies
+              uses: actions/cache@v4
+              with:
+                  path: ${{ env.HOME }}/.m2/repository
+                  key: ${{ runner.os }}-maven-${{ hashFiles('backend/**/pom.xml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-maven-
+
+            - name: Build with Maven
+              working-directory: backend/RAG_chatbot
+              run: mvn --batch-mode clean test

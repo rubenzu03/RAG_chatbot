@@ -8,16 +8,13 @@ import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.RewriteQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.TranslationQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentJoinModule;
 import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -26,13 +23,11 @@ import java.util.stream.Collectors;
 @Service
 public class AIService {
 
-    @Value("${VECTOR_DATABASE_FILES_DIR:}")
-    private String vectorDatabaseFilesDir;
-
-    @Autowired
-    private VectorStore vectordb;
+    private static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
     private final ChatClient chatClient;
+
+    private static final Logger log = LoggerFactory.getLogger(AIService.class);
 
     private final QueryTransformerModule queryTransformerModule;
     private final RewriteQueryModule rewriteQueryModule;
@@ -59,14 +54,16 @@ public class AIService {
         this.documentJoinModule = documentJoinModule;
     }
 
-    public String simpleQueryTest(String query){
-        return this.chatClient.prompt(query).call().content();
+    public String simpleQueryTest(String query, String sessionId){
+        return this.chatClient.prompt(query)
+                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
+                .call()
+                .content();
     }
 
-    public String RAGQueryTest(String query) {
-        // Step 1: Pre-retrieval - Query transformation pipeline
-        //TODO: Change from String to Query
-        Query finalQuery = queryTransformerModule.transformQuery(query);
+    public String RAGQueryTest(String query, String sessionId) {
+        // Step 1: Pre-retrieval - Query transformation pipeline with chat history
+        Query finalQuery = queryTransformerModule.transformQuery(query, sessionId);
         finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
         finalQuery = translationQueryModule.translateQuery(finalQuery.text());
 
@@ -107,9 +104,8 @@ public class AIService {
                 5            // Top K documents
         );
 
-        // Step 6: Generate RAG response
-        if (rankedDocs.isEmpty()) {
-            return "I'm sorry, I don't have enough information to answer that question.";
+        if (rankedDocs.isEmpty()){
+            log.warn("No documents found for query: {}", query);
         }
 
         // Construct context from ranked documents
@@ -117,18 +113,15 @@ public class AIService {
                 .map(Document::getFormattedContent)
                 .collect(Collectors.joining("\n\n"));
 
-        // Generate response using ChatClient with context
-
-        String response = chatClient.prompt()
+        return chatClient.prompt()
                 .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
                 .user(u -> u
                     .text("Context:\n{context}\n\nQuestion: {question}")
                     .param("context", context)
                     .param("question", query))
+                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
                 .call()
                 .content();
-
-        return response;
     }
 
 

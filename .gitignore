@@ -60,3 +60,6 @@ build/
 
 ### Container Files ###
 /volumes
+
+### RAG Files ###
+/rag_files
