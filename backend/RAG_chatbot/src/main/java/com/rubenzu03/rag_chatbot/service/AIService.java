@@ -8,6 +8,8 @@ import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.RewriteQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.TranslationQueryModule;
 import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentJoinModule;
 import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -24,6 +26,8 @@ public class AIService {
     private static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
     private final ChatClient chatClient;
+
+    private static final Logger log = LoggerFactory.getLogger(AIService.class);
 
     private final QueryTransformerModule queryTransformerModule;
     private final RewriteQueryModule rewriteQueryModule;
@@ -100,9 +104,8 @@ public class AIService {
                 5            // Top K documents
         );
 
-        // Step 6: Generate RAG response
-        if (rankedDocs.isEmpty()) {
-            return "I'm sorry, I don't have enough information to answer that question.";
+        if (rankedDocs.isEmpty()){
+            log.warn("No documents found for query: {}", query);
         }
 
         // Construct context from ranked documents
@@ -110,9 +113,7 @@ public class AIService {
                 .map(Document::getFormattedContent)
                 .collect(Collectors.joining("\n\n"));
 
-        // Generate response using ChatClient with context
-
-        String response = chatClient.prompt()
+        return chatClient.prompt()
                 .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
                 .user(u -> u
                     .text("Context:\n{context}\n\nQuestion: {question}")
@@ -121,8 +122,6 @@ public class AIService {
                 .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
                 .call()
                 .content();
-
-        return response;
     }
 
 
