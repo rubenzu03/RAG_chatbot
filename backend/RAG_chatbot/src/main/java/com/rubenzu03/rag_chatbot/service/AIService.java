@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import reactor.core.publisher.Flux;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -61,7 +63,7 @@ public class AIService {
                 .content();
     }
 
-    public String RAGQueryTest(String query, String sessionId) {
+    public Flux<String> RAGQueryTest(String query, String sessionId) {
         // Step 1: Pre-retrieval - Query transformation pipeline with chat history
         Query finalQuery = queryTransformerModule.transformQuery(query, sessionId);
         finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
@@ -120,7 +122,7 @@ public class AIService {
                     .param("context", context)
                     .param("question", query))
                 .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
-                .call()
+                .stream()
                 .content();
     }
 
