@@ -46,7 +46,7 @@ export async function sendMessage(message: string, sessionId?: string): Promise<
   const sid = sessionId || getOrCreateSessionId();
   const params = new URLSearchParams({
     query: message,
-    session_id: sid,
+    sessionId: sid,
   });
 
   const response = await fetch(`${API_BASE_URL}/ai/test/query?${params}`, {
@@ -74,11 +74,11 @@ export async function streamRagQuery(
 ): Promise<void> {
   const params = new URLSearchParams({
     query: message,
-    session_id: sessionId,
+    sessionId: sessionId,
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/ai/rag/ragquery?${params}`, {
+    const response = await fetch(`${API_BASE_URL}/ai/test/ragquery?${params}`, {
       method: 'POST',
       headers: {
         Accept: 'text/event-stream',
@@ -105,15 +105,19 @@ export async function streamRagQuery(
 
       for (const line of lines) {
         if (line.startsWith('data:')) {
-          const data = line.slice(5).trim();
+          const data = line.slice(5);
 
-          if (!sessionIdExtracted && data.startsWith('[SESSION:')) {
+          if (!sessionIdExtracted && data.trim().startsWith('[SESSION:')) {
             const match = data.match(/\[SESSION:([^\]]+)\]/);
             if (match) {
-              onSessionId(match[1]);
-              setSessionId(match[1]);
+              const newSessionId = match[1];
+              const existingSessionId = localStorage.getItem(SESSION_KEY);
+              if (!existingSessionId) {
+                setSessionId(newSessionId);
+                onSessionId(newSessionId);
+              }
               sessionIdExtracted = true;
-              const remaining = data.replace(/\[SESSION:[^\]]+\]/, '');
+              const remaining = data.replace(/\[SESSION:[^\]]+\]/, '').trimStart();
               if (remaining) {
                 onToken(remaining);
               }
@@ -121,7 +125,7 @@ export async function streamRagQuery(
             }
           }
 
-          if (data && data !== '[DONE]') {
+          if (data.trim() && data.trim() !== '[DONE]') {
             onToken(data);
           }
         }
