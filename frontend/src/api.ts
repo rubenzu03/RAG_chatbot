@@ -28,8 +28,19 @@ export function setSessionId(sessionId: string): void {
   localStorage.setItem(SESSION_KEY, sessionId);
 }
 
-export function clearSessionId(): void {
-  localStorage.removeItem(SESSION_KEY);
+export async function clearSessionId(): Promise<boolean> {
+  const param = localStorage.getItem(SESSION_KEY);
+  if (!param) return false;
+
+  try{
+    await api.delete(`/ai/chat/${param}`);
+    localStorage.removeItem(SESSION_KEY);
+    return true;
+  } catch (error) {
+    console.error('Error clearing session:', error);
+    return false;
+  }
+
 }
 
 export interface ChatMessage {
