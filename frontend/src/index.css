@@ -1,2 +1,14 @@
 @import "tailwindcss";
 @tailwind utilities;
+
+@theme{
+    --color-message-user-light: #DDDDDD;
+    --color-bg-primary-light: #FFFFFF;
+}
+
+@theme{
+    --color-primary-dark: #242424;
+    --color-message-bot-dark: #555555;
+    --color-message-user-dark: #3e75af;
+    --color-button-disabled-dark: #2b2b2b;
+}
