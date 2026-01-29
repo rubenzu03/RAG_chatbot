@@ -49,4 +49,16 @@ public class AIController {
                 aiService.RAGQueryTest(query, actualSessionId)
         );
     }
+
+    @PostMapping(value = "/api/ai/test/ragquery/noflux")
+    public String askQueryUsingRAGNoFlux(
+            @RequestParam(name = "query") String query,
+            @RequestParam(name = "sessionId", required = false) String sessionId) {
+
+        Session session = sessionService.getOrCreateSession(sessionId);
+        String actualSessionId = session.getSessionId();
+
+        return aiService.RAGQueryTestNoFlux(query, actualSessionId);
+
+    }
 }

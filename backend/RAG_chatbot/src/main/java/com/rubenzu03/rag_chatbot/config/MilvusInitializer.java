@@ -61,7 +61,6 @@ public class MilvusInitializer implements ApplicationRunner {
                             .build()
             );
 
-            // Check if collection exists
             boolean exists = milvusClient.hasCollection(
                     HasCollectionParam.newBuilder()
                             .withCollectionName(collectionName)
@@ -80,7 +79,6 @@ public class MilvusInitializer implements ApplicationRunner {
 
             log.info("Creating Milvus collection '{}' with dimension {}", collectionName, dimension);
 
-            // Create schema: id (Int64 auto-generated), doc_id (VarChar), embedding (FloatVector), content (VarChar), metadata (JSON)
             FieldType idField = FieldType.newBuilder()
                     .withName("id")
                     .withDataType(DataType.Int64)
@@ -123,7 +121,6 @@ public class MilvusInitializer implements ApplicationRunner {
 
             milvusClient.createCollection(createCollectionParam);
 
-            // Create vector index
             milvusClient.createIndex(CreateIndexParam.newBuilder()
                     .withCollectionName(collectionName)
                     .withFieldName("embedding")
@@ -133,7 +130,6 @@ public class MilvusInitializer implements ApplicationRunner {
                     .withSyncMode(Boolean.TRUE)
                     .build());
 
-            // Load collection
             milvusClient.loadCollection(LoadCollectionParam.newBuilder()
                     .withCollectionName(collectionName)
                     .build());

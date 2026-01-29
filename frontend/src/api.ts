@@ -75,6 +75,28 @@ export async function sendMessage(message: string, sessionId?: string): Promise<
   return data;
 }
 
+export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/ai/chat/?sessionId=${sessionId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.history as ChatMessage[];
+  }
+  catch (error) {
+    console.error('Error fetching chat history:', error);
+    return [];
+  }
+}
+
 export async function streamRagQuery(
   message: string,
   sessionId: string,

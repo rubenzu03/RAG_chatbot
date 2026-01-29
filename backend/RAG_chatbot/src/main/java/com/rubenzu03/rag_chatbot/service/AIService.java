@@ -83,22 +83,11 @@ public class AIService {
         for (Query expandedQuery : expandedQueries) {
 
             List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 10, 0.7);
-            // Retrieve documents for each expanded query using similarity search
-            /*List<Document> retrievedDocs = vectordb.similaritySearch(
-                SearchRequest.builder()
-                    .query(expandedQuery.text())
-                    .topK(10)  // Retrieve top 10 for each query
-                    .build()
-            );
-*/
-            // Store results - wrap in a List<List<Document>> as expected by DocumentJoiner
             queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
         }
 
-        // Step 4: Join - Merge documents from all queries
         List<Document> joinedDocs = documentJoinModule.joinDocuments(queryToDocuments);
 
-        // Step 5: Post-retrieve - Rank, filter, and deduplicate
         List<Document> rankedDocs = documentPostProcessingModule.rankAndFilterDocuments(
                 joinedDocs,
                 finalQuery,  // Use original final query for ranking
@@ -110,11 +99,11 @@ public class AIService {
             log.warn("No documents found for query: {}", query);
         }
 
-        // Construct context from ranked documents
         String context = rankedDocs.stream()
                 .map(Document::getFormattedContent)
                 .collect(Collectors.joining("\n\n"));
 
+        log.info("Response generated");
         return chatClient.prompt()
                 .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
                 .user(u -> u
@@ -124,6 +113,56 @@ public class AIService {
                 .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
                 .stream()
                 .content();
+    }
+
+    public String RAGQueryTestNoFlux(String query, String sessionId){
+        // Step 1: Pre-retrieval - Query transformation pipeline with chat history
+        Query finalQuery = queryTransformerModule.transformQuery(query, sessionId);
+        finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
+        finalQuery = translationQueryModule.translateQuery(finalQuery.text());
+
+        // Step 2: Query expansion - Generate multiple query variations
+        List<Query> expandedQueries = queryExpansionModule.expandQueries(finalQuery);
+
+        if (!expandedQueries.contains(finalQuery)) {
+            List<Query> allQueries = new ArrayList<>(expandedQueries);
+            allQueries.addFirst(finalQuery);
+            expandedQueries = allQueries;
+        }
+
+        Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
+
+        for (Query expandedQuery : expandedQueries) {
+
+            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 10, 0.7);
+            queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
+        }
+
+        List<Document> joinedDocs = documentJoinModule.joinDocuments(queryToDocuments);
+
+        List<Document> rankedDocs = documentPostProcessingModule.rankAndFilterDocuments(
+                joinedDocs,
+                finalQuery,  // Use original final query for ranking
+                0.7,         // Similarity threshold
+                5            // Top K documents
+        );
+
+        if (rankedDocs.isEmpty()){
+            log.warn("No documents found for query: {}", query);
+        }
+
+        String context = rankedDocs.stream()
+                .map(Document::getFormattedContent)
+                .collect(Collectors.joining("\n\n"));
+
+        log.info("Response generated");
+        return chatClient.prompt()
+                .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
+                .user(u -> u
+                        .text("Context:\n{context}\n\nQuestion: {question}")
+                        .param("context", context)
+                        .param("question", query))
+                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)).call().content();
     }
 
 

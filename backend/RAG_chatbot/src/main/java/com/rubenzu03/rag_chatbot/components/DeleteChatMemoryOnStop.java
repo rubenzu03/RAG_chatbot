@@ -26,6 +26,7 @@ public class DeleteChatMemoryOnStop {
     @EventListener(ContextClosedEvent.class)
     public void onContextClosed() {
         logger.info("Deleting all chat memory on shutdown");
+        sessionRepository.deleteAll();
         chatMemoryRepository.deleteAll();
     }
 }

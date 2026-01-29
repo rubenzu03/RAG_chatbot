@@ -9,7 +9,7 @@ export default function ChatbotMain() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>(() => getOrCreateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSend = async () => {
     const trimmedInput = input.trim();
@@ -65,7 +65,7 @@ export default function ChatbotMain() {
     );
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -81,19 +81,134 @@ export default function ChatbotMain() {
 
   const handleDataDeletion = () => {
     clearSessionId();
+    clearMessages();
+    setSessionId(getOrCreateSessionId());
+    inputRef.current?.focus();
   };
 
+  const clearMessages = () => {
+    setMessages([]);
+  }
+
+  
+
   return (
-        <div className = "flex flex-col h-full">
-          <div className = "flex items-start justify-items-start px-6 py-4 border-b border-gray-700 bg-gray-800">
-            <div className = "flex items-center mr-5">
-              <img src = "src/assets/react.svg" alt = "PLACEHOLDER" className = "h-8 w-8 mr-2"/>
-              <h1 className = "text-3xl font-bold text-white">Chatbot</h1>
-            </div>
-            <button onClick={handleDataDeletion} className="ml-auto px-4 py-1 bg-red-600 text-white rounded hover:bg-red-700">
-              Delete Chat History
-            </button>
+    <div className="flex flex-col h-screen">
+      <div className="flex items-center justify-start px-6 py-4 border-b border-gray-700 bg-gray-800">
+        <img src="/src/assets/react.svg" alt="PLACEHOLDER" className="w-8 h-8 mr-3" />
+        <h1 className="text-2xl font-bold text-white">Chatbot</h1>
+        <button
+          className="text-white bg-red-500 px-4 py-2 rounded-lg ml-auto hover:bg-red-800"
+          onClick={handleDataDeletion}
+        >
+          Delete Data
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+        {messages.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-gray-400">
+            <h2 className="text-xl font-semibold text-gray-300 mb-2">Welcome to RAG Chatbot</h2>
+            <p className="text-center max-w-md">
+              Start a conversation by typing a message below. I can help answer questions based on
+              your knowledge base.
+            </p>
           </div>
+        ) : (
+          // Messages List
+          <>
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex ${
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                } animate-fade-in`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    message.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'
+                  }`}
+                >
+                  {/* <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-semibold opacity-80">
+                      {message.role === 'user' ? 'You' : 'Assistant'}
+                    </span>
+                  </div> */}
+
+                  <div className="whitespace-pre-wrap wrapbreak-words">
+                    {message.content || (
+                      <span className="inline-flex gap-1">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Timestamp */}
+                  <div className="text-xs opacity-60 mt-1">
+                    {new Date().toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-gray-700 bg-gray-800 px-4 py-4">
+        <div className="relative max-w-4xl mx-auto flex items-center">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+            disabled={isLoading}
+            rows={1}
+            className="w-full bg-gray-700 text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-12 max-h-32"
+            style={{
+              scrollbarWidth: 'thin',
+            }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={!input.trim() || isLoading}
+            className="absolute right-3 p-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
+          >
+            {isLoading ? (
+              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            ) : (
+              <img src="/src/assets/send-ins-line.svg" alt="Send" className="w-5 h-5" />
+            )}
+          </button>
         </div>
-    );
+      </div>
+      {/* AI Content warning */}
+      <div className="bg-gray-700 px-4 py-4 text-center text-base text-gray-200">
+        <p>
+          Content generated by AI may not be accurate or reliable. Please verify information from
+          trusted sources.
+        </p>
+      </div>
+    </div>
+  );
 }
