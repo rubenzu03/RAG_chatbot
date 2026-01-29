@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.rubenzu03</groupId>
     <artifactId>RAG_chatbot</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>RAG_chatbot</name>
     <description>RAG_chatbot</description>
     <url/>
@@ -154,6 +154,11 @@
                 <artifactId>logback-core</artifactId>
                 <version>1.5.25</version>
             </dependency>
+          <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.25</version>
+          </dependency>
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
