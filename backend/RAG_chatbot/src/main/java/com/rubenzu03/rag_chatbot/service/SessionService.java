@@ -45,7 +45,7 @@ public class SessionService {
 
     private Session createSessionWithId(String sessionId) {
         Session session = new Session();
-        session.setSessionIdOverride(sessionId); // We need to add this method
+        session.setSessionIdOverride(sessionId);
         Timestamp now = Timestamp.from(Instant.now());
         session.setCreatedAt(now);
         session.setLastAccessedAt(now);

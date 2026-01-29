@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+target
+.vscode
+*.log
+frontend/node_modules
+frontend/dist
+frontend/build
