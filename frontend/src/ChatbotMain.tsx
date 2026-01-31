@@ -135,7 +135,7 @@ export default function ChatbotMain() {
                     </span>
                   </div> */}
 
-                  <div className="whitespace-pre-wrap wrapbreak-words">
+                  <div className="markdown-content wrapbreak-words">
                     {message.content ? (<ReactMarkdown>{message.content}</ReactMarkdown>) : (
                       <span className="inline-flex gap-1">
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
