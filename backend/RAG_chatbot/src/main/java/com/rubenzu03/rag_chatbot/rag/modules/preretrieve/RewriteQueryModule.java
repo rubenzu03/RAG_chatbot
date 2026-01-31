@@ -9,18 +9,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class RewriteQueryModule {
 
-
-    private final ChatClient.Builder chatClientBuilder;
+    private final QueryTransformer queryTransformer;
 
     public RewriteQueryModule(ChatClient.Builder chatClientBuilder) {
-        this.chatClientBuilder = chatClientBuilder;
+        this.queryTransformer = RewriteQueryTransformer.builder()
+                .chatClientBuilder(chatClientBuilder)
+                .build();
     }
 
-    public Query rewriteUserQuery(String compressedQuery){
+    public Query rewriteUserQuery(String compressedQuery) {
         Query query = new Query(compressedQuery);
-
-        QueryTransformer queryTransformer = RewriteQueryTransformer.builder().
-                chatClientBuilder(chatClientBuilder).build();
 
         return queryTransformer.transform(query);
     }

@@ -12,29 +12,33 @@ import org.springframework.stereotype.Service;
 @Service
 public class TranslationQueryModule {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private static final String TARGET_LANGUAGE = "spanish";
+
+    private final LanguageDetector languageDetector;
+    private final QueryTransformer queryTransformer;
 
     public TranslationQueryModule(ChatClient.Builder chatClientBuilder) {
-        this.chatClientBuilder = chatClientBuilder;
+        this.languageDetector = LanguageDetectorBuilder.fromAllLanguages().build();
+        this.queryTransformer = TranslationQueryTransformer.builder()
+                .chatClientBuilder(chatClientBuilder)
+                .targetLanguage(TARGET_LANGUAGE)
+                .build();
     }
 
-    public Query translateQuery(String rewrittenQuery){
+    public Query translateQuery(String rewrittenQuery) {
         Query query = new Query(rewrittenQuery);
 
         String detectedLanguage = detectLanguage(rewrittenQuery);
-        String targetLanguage = "spanish";
-        if (detectedLanguage.equalsIgnoreCase(targetLanguage)) {
-            targetLanguage = detectedLanguage;
-        }
-        QueryTransformer queryTransformer = TranslationQueryTransformer.builder()
-                .chatClientBuilder(chatClientBuilder).targetLanguage(targetLanguage).build();
 
-        return queryTransformer.transform(query);
+        if (!detectedLanguage.equalsIgnoreCase(TARGET_LANGUAGE)) {
+            return queryTransformer.transform(query);
+        }
+
+        return query;
     }
 
-    private String detectLanguage(String rewrittenQuery){
-        LanguageDetector detector = LanguageDetectorBuilder.fromAllLanguages().build();
-        Language language = detector.detectLanguageOf(rewrittenQuery);
+    private String detectLanguage(String text) {
+        Language language = languageDetector.detectLanguageOf(text);
         return language.name();
     }
 }
