@@ -22,9 +22,24 @@ public class EnvFileEnvironmentPostProcessor implements EnvironmentPostProcessor
 
         Map<String, Object> propertyMap = new HashMap<>();
 
-        Path envPath = Paths.get(".env");
-        
-        if (Files.exists(envPath)) {
+        // Try multiple locations for .env file
+        Path[] possiblePaths = {
+            Paths.get(".env"),                           // Current directory
+            Paths.get("../../.env"),                     // Two levels up (for tests)
+            Paths.get("../../../.env"),                  // Three levels up
+            Paths.get(System.getProperty("user.dir"), ".env")  // User directory
+        };
+
+        Path envPath = null;
+        for (Path path : possiblePaths) {
+            if (Files.exists(path)) {
+                envPath = path;
+                logger.debug("Found .env file at: {}", path.toAbsolutePath());
+                break;
+            }
+        }
+
+        if (envPath != null) {
             try {
                 List<String> lines = Files.readAllLines(envPath);
                 for (String rawLine : lines) {
@@ -56,7 +71,7 @@ public class EnvFileEnvironmentPostProcessor implements EnvironmentPostProcessor
                 logger.warn("Failed to read .env file: {}", e.getMessage());
             }
         } else {
-            logger.debug(".env file not found, skipping");
+            logger.debug(".env file not found in any expected location, skipping");
         }
 
         MapPropertySource propertySource = new MapPropertySource("dotenvProperties", propertyMap);
