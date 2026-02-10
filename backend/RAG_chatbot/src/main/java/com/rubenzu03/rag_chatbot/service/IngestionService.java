@@ -39,6 +39,7 @@ public class IngestionService {
         log.info("Splitting {} documents into chunks", documents.size());
         List<Document> splitDocuments = textSplitter.split(documents);
         log.info("Adding {} document chunks to vector store", splitDocuments.size());
+        if (documents.isEmpty()) return;
         vectorStore.add(splitDocuments);
         log.info("Document ingestion completed successfully");
     }
