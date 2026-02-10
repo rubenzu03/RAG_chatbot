@@ -2,9 +2,9 @@ name: Java CI with Maven
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
@@ -31,17 +31,9 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'temurin'
+          java-version: "21"
+          distribution: "temurin"
 
       - name: Build with Maven
         working-directory: ./backend/RAG_chatbot
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: testdb
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: mvn clean install
-
