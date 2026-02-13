@@ -44,7 +44,6 @@ public class EnvFileEnvironmentPostProcessor implements EnvironmentPostProcessor
                     String key = line.substring(0, idx).trim();
                     String value = line.substring(idx + 1).trim();
 
-                    // strip optional surrounding quotes
                     if ((value.startsWith("\"") && value.endsWith("\"")) || (value.startsWith("'") && value.endsWith("'"))) {
                         value = value.substring(1, value.length() - 1);
                     }
