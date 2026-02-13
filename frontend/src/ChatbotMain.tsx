@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { streamRagQuery, getOrCreateSessionId, clearSessionId, type ChatMessage } from './api';
+import ReactMarkdown from 'react-markdown';
 
 import { sendMessage } from './api';
 
@@ -134,8 +135,8 @@ export default function ChatbotMain() {
                     </span>
                   </div> */}
 
-                  <div className="whitespace-pre-wrap wrapbreak-words">
-                    {message.content || (
+                  <div className="markdown-content wrapbreak-words">
+                    {message.content ? (<ReactMarkdown>{message.content}</ReactMarkdown>) : (
                       <span className="inline-flex gap-1">
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>

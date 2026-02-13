@@ -1,6 +1,5 @@
 package com.rubenzu03.rag_chatbot.service;
 
-import com.rubenzu03.rag_chatbot.persistence.MinIODocumentReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
@@ -36,6 +35,10 @@ public class IngestionService {
     public void ingestDocuments(){
         log.info("Starting document ingestion from bucket: {}", bucketName);
         List<Document> documents = minIODocumentReader.readAllDocuments(bucketName);
+        if (documents.isEmpty()) {
+            log.warn("No documents found in bucket '{}'", bucketName);
+            return;
+        }
         log.info("Splitting {} documents into chunks", documents.size());
         List<Document> splitDocuments = textSplitter.split(documents);
         log.info("Adding {} document chunks to vector store", splitDocuments.size());

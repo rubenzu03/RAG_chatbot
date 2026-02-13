@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.persistence;
+package com.rubenzu03.rag_chatbot.service;
 
 import io.minio.GetObjectArgs;
 import io.minio.ListObjectsArgs;

@@ -1,5 +1,6 @@
 package com.rubenzu03.rag_chatbot.config;
 
+import io.milvus.client.MilvusClient;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.grpc.DataType;
 import io.milvus.param.ConnectParam;
@@ -61,78 +62,11 @@ public class MilvusInitializer implements ApplicationRunner {
                             .build()
             );
 
-            boolean exists = milvusClient.hasCollection(
-                    HasCollectionParam.newBuilder()
-                            .withCollectionName(collectionName)
-                            .build()
-            ).getData();
-
-            if (exists) {
-                log.info("Collection '{}' exists. Dropping to ensure correct schema.", collectionName);
-                milvusClient.dropCollection(
-                        io.milvus.param.collection.DropCollectionParam.newBuilder()
-                                .withCollectionName(collectionName)
-                                .build()
-                );
-                log.info("Dropped existing collection '{}'", collectionName);
-            }
-
             log.info("Creating Milvus collection '{}' with dimension {}", collectionName, dimension);
 
-            FieldType idField = FieldType.newBuilder()
-                    .withName("id")
-                    .withDataType(DataType.Int64)
-                    .withPrimaryKey(true)
-                    .withAutoID(true)
-                    .build();
-
-            FieldType docIdField = FieldType.newBuilder()
-                    .withName("doc_id")
-                    .withDataType(DataType.VarChar)
-                    .withMaxLength(36)
-                    .build();
-
-            FieldType embeddingField = FieldType.newBuilder()
-                    .withName("embedding")
-                    .withDataType(DataType.FloatVector)
-                    .withDimension(dimension)
-                    .build();
-
-            FieldType contentField = FieldType.newBuilder()
-                    .withName("content")
-                    .withDataType(DataType.VarChar)
-                    .withMaxLength(65535)
-                    .build();
-
-            FieldType metadataField = FieldType.newBuilder()
-                    .withName("metadata")
-                    .withDataType(DataType.JSON)
-                    .build();
-
-            CollectionSchemaParam schema = CollectionSchemaParam.newBuilder()
-                    .withFieldTypes(Arrays.asList(idField, docIdField, embeddingField, contentField, metadataField))
-                    .build();
-
-            CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
-                    .withCollectionName(collectionName)
-                    .withDescription("RAG chatbot embeddings")
-                    .withSchema(schema)
-                    .build();
-
-            milvusClient.createCollection(createCollectionParam);
-
-            milvusClient.createIndex(CreateIndexParam.newBuilder()
-                    .withCollectionName(collectionName)
-                    .withFieldName("embedding")
-                    .withIndexType(IndexType.IVF_FLAT)
-                    .withMetricType(MetricType.COSINE)
-                    .withExtraParam("{\"nlist\":1024}")
-                    .withSyncMode(Boolean.TRUE)
-                    .build());
-
-            milvusClient.loadCollection(LoadCollectionParam.newBuilder()
-                    .withCollectionName(collectionName)
-                    .build());
+            createFieldsAndSchema(milvusClient);
+            createIndex(milvusClient);
+            loadCollection(milvusClient);
 
             log.info("Successfully created and loaded collection '{}'", collectionName);
 
@@ -144,5 +78,66 @@ public class MilvusInitializer implements ApplicationRunner {
                 milvusClient.close();
             }
         }
+    }
+
+    private void createFieldsAndSchema(MilvusClient milvusClient){
+        FieldType idField = FieldType.newBuilder()
+                .withName("id")
+                .withDataType(DataType.Int64)
+                .withPrimaryKey(true)
+                .withAutoID(true)
+                .build();
+
+        FieldType docIdField = FieldType.newBuilder()
+                .withName("doc_id")
+                .withDataType(DataType.VarChar)
+                .withMaxLength(36)
+                .build();
+
+        FieldType embeddingField = FieldType.newBuilder()
+                .withName("embedding")
+                .withDataType(DataType.FloatVector)
+                .withDimension(dimension)
+                .build();
+
+        FieldType contentField = FieldType.newBuilder()
+                .withName("content")
+                .withDataType(DataType.VarChar)
+                .withMaxLength(65535)
+                .build();
+
+        FieldType metadataField = FieldType.newBuilder()
+                .withName("metadata")
+                .withDataType(DataType.JSON)
+                .build();
+
+        CollectionSchemaParam schema = CollectionSchemaParam.newBuilder()
+                .withFieldTypes(Arrays.asList(idField, docIdField, embeddingField, contentField, metadataField))
+                .build();
+
+        CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
+                .withDescription("RAG chatbot embeddings")
+                .withSchema(schema)
+                .build();
+
+        milvusClient.createCollection(createCollectionParam);
+    }
+
+    private void createIndex(MilvusClient milvusClient){
+        milvusClient.createIndex(CreateIndexParam.newBuilder()
+                .withCollectionName(collectionName)
+                .withFieldName("embedding")
+                .withIndexType(IndexType.IVF_FLAT)
+                .withMetricType(MetricType.COSINE)
+                .withExtraParam("{\"nlist\":1024}")
+                .withSyncMode(Boolean.TRUE)
+                .build());
+    }
+
+    private void loadCollection(MilvusClient milvusClient){
+        milvusClient.loadCollection(LoadCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
+                .build());
     }
 }

@@ -19,7 +19,6 @@ public class MinioConfig {
     private String secretKey;
 
     @Bean
-    @ConditionalOnExpression("'${MINIO.ENDPOINT:${MINIO_ENDPOINT:}}' != ''")
     public MinioClient minioClient() {
         return MinioClient.builder()
                 .endpoint(endpoint)

@@ -1,9 +1,8 @@
 package com.rubenzu03.rag_chatbot.rag.modules.preretrieve;
 
-import com.rubenzu03.rag_chatbot.config.ChatClientConfig;
-import com.rubenzu03.rag_chatbot.dto.ChatResponse;
-import com.rubenzu03.rag_chatbot.persistence.ChatMemoryRepository;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
@@ -11,43 +10,55 @@ import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransfo
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
 public class QueryTransformerModule {
 
-    private final ChatClient.Builder chatClientBuilder;
+    private final ChatMemory chatMemory;
+    private final QueryTransformer queryTransformer;
+
+    private static final PromptTemplate COMPRESSION_PROMPT = new PromptTemplate("""
+            Dado el historial de conversación y la consulta actual del usuario, reformula la consulta
+            para que sea autocontenida y clara, incluyendo cualquier contexto relevante del historial.
+            
+            Enfócate en temas de programación, ingeniería del software y arquitectura del software.
+            Si la consulta hace referencia a algo mencionado anteriormente, inclúyelo explícitamente.
+            
+            Historial de Conversación:
+            {history}
+            
+            Consulta Actual:
+            {query}
+            
+            Consulta Reformulada:
+            """);
 
     @Autowired
-    public QueryTransformerModule(ChatClient.Builder chatClientBuilder) {
-        this.chatClientBuilder = chatClientBuilder;
+    public QueryTransformerModule(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory) {
+        this.chatMemory = chatMemory;
+        this.queryTransformer = CompressionQueryTransformer.builder()
+                .promptTemplate(COMPRESSION_PROMPT)
+                .chatClientBuilder(chatClientBuilder)
+                .build();
     }
 
-    public Query transformQuery(String rawQuery, String sessionId){
+    public Query transformQuery(String rawQuery, String sessionId) {
+        List<Message> historyMessages = getConversationHistory(sessionId);
+
         Query query = Query.builder()
                 .text(rawQuery)
-                .build();
-
-        PromptTemplate promptTemplate = new PromptTemplate("""
-                Dado el historial de la conversación y la consulta actual, 
-                comprime y reformula la consulta para que sea independiente y autocontenida.
-                Recuerda que eres un asistente de estudio para universitarios con IA de asignaturas
-                relacionadas con la informática y la ingenieria
-            
-    
-                Conversation History:
-                {history}
-                
-                Current Query:
-                {query}
-                Compressed Query:
-                """);
-        QueryTransformer queryTransformer = CompressionQueryTransformer.builder()
-                .promptTemplate(promptTemplate)
-                .chatClientBuilder(chatClientBuilder)
+                .history(historyMessages)
                 .build();
 
         return queryTransformer.transform(query);
     }
 
+    private List<Message> getConversationHistory(String sessionId) {
+        if (sessionId == null || sessionId.isBlank()) {
+            return Collections.emptyList();
+        }
+        return chatMemory.get(sessionId);
+    }
 }

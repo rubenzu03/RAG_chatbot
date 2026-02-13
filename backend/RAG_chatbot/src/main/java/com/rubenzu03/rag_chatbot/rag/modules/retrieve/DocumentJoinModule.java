@@ -12,11 +12,13 @@ import java.util.Map;
 @Service
 public class DocumentJoinModule {
 
-    private Map<Query, List<List<Document>>> queryToDocuments;
+    private final DocumentJoiner documentJoiner;
 
+    public DocumentJoinModule() {
+        this.documentJoiner = new ConcatenationDocumentJoiner();
+    }
 
-    public List<Document> joinDocuments(Map<Query, List<List<Document>>> queryToDocuments){
-        DocumentJoiner documentJoiner = new ConcatenationDocumentJoiner();
+    public List<Document> joinDocuments(Map<Query, List<List<Document>>> queryToDocuments) {
         return documentJoiner.join(queryToDocuments);
     }
 }
