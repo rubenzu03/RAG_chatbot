@@ -8,10 +8,14 @@ import io.minio.messages.Item;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.pdf.PagePdfDocumentReader;
+import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -44,19 +48,48 @@ public class MinIODocumentReader {
 
             for (Result<Item> result : objects) {
                 Item item = result.get();
+                String objectName = item.objectName().toLowerCase();
 
                 try (InputStream stream = minioClient.getObject(
                         GetObjectArgs.builder().bucket(bucketName)
                                 .object(item.objectName()).build()
                 )) {
-                    String content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                    if (objectName.endsWith(".pdf")) {
+                        log.debug("Processing PDF file: {}", item.objectName());
+                        byte[] pdfBytes = stream.readAllBytes();
+                        PdfDocumentReaderConfig config = PdfDocumentReaderConfig.builder()
+                                .withPagesPerDocument(10)
+                                .build();
 
-                    Document doc = new Document(content,
-                            Map.of("item_name", item.objectName(),
-                                    "bucket", bucketName));
+                        PagePdfDocumentReader pdfReader = new PagePdfDocumentReader(
+                                new InputStreamResource(new ByteArrayInputStream(pdfBytes)),
+                                config);
 
-                    documents.add(doc);
+                        List<Document> pdfDocuments = pdfReader.get();
+                        for (Document doc : pdfDocuments) {
+                            Map<String, Object> metadata = doc.getMetadata();
+                            metadata.put("item_name", item.objectName());
+                            metadata.put("bucket", bucketName);
+                            metadata.put("file_type", "pdf");
+                            documents.add(doc);
+                        }
 
+                        log.debug("Extracted {} pages from PDF: {}", pdfDocuments.size(), item.objectName());
+                    }
+                    else if (objectName.endsWith(".txt") || objectName.endsWith(".md")) {
+                        log.debug("Processing text file: {}", item.objectName());
+                        String content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+
+                        Document doc = new Document(content,
+                                Map.of("item_name", item.objectName(),
+                                        "bucket", bucketName,
+                                        "file_type", "text"));
+
+                        documents.add(doc);
+                    }
+                    else {
+                        log.warn("Unsupported file type for: {}. Skipping.", item.objectName());
+                    }
                 }
             }
         }
@@ -69,3 +102,5 @@ public class MinIODocumentReader {
         return documents;
     }
 }
+
+
