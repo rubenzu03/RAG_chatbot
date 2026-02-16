@@ -68,13 +68,8 @@ public class MilvusInitializer implements ApplicationRunner {
 
             log.info("Creating Milvus collection '{}' with dimension {}", collectionName, dimension);
 
-            // Drop collection if configured to force re-ingestion
             if (dropCollectionOnStartup) {
-                log.warn("Dropping existing collection '{}' as milvus.drop-collection-on-startup=true", collectionName);
-                milvusClient.dropCollection(DropCollectionParam.newBuilder()
-                        .withCollectionName(collectionName)
-                        .build());
-                log.info("Collection '{}' dropped successfully", collectionName);
+                dropCollection(milvusClient, collectionName);
             }
 
             createFieldsAndSchema(milvusClient);
@@ -94,13 +89,6 @@ public class MilvusInitializer implements ApplicationRunner {
     }
 
     private void createFieldsAndSchema(MilvusClient milvusClient){
-        FieldType idField = FieldType.newBuilder()
-                .withName("id")
-                .withDataType(DataType.Int64)
-                .withPrimaryKey(true)
-                .withAutoID(true)
-                .build();
-
         FieldType docIdField = FieldType.newBuilder()
                 .withName("doc_id")
                 .withDataType(DataType.VarChar)
@@ -125,7 +113,7 @@ public class MilvusInitializer implements ApplicationRunner {
                 .build();
 
         CollectionSchemaParam schema = CollectionSchemaParam.newBuilder()
-                .withFieldTypes(Arrays.asList(idField, docIdField, embeddingField, contentField, metadataField))
+                .withFieldTypes(Arrays.asList(docIdField, embeddingField, contentField, metadataField))
                 .build();
 
         CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
@@ -152,5 +140,13 @@ public class MilvusInitializer implements ApplicationRunner {
         milvusClient.loadCollection(LoadCollectionParam.newBuilder()
                 .withCollectionName(collectionName)
                 .build());
+    }
+
+    private void dropCollection(MilvusClient milvusClient, String collectionName){
+        log.warn("Dropping existing collection '{}' as milvus.drop-collection-on-startup=true", collectionName);
+        milvusClient.dropCollection(DropCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
+                .build());
+        log.info("Collection '{}' dropped successfully", collectionName);
     }
 }
