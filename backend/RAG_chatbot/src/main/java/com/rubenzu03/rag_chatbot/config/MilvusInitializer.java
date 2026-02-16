@@ -5,6 +5,7 @@ import io.milvus.client.MilvusServiceClient;
 import io.milvus.grpc.DataType;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.collection.CreateCollectionParam;
+import io.milvus.param.collection.DropCollectionParam;
 import io.milvus.param.collection.FieldType;
 import io.milvus.param.collection.HasCollectionParam;
 import io.milvus.param.collection.CollectionSchemaParam;
@@ -45,8 +46,11 @@ public class MilvusInitializer implements ApplicationRunner {
     @Value("${VECTOR_DATABASE_COLLECTION_NAME:chatbot}")
     private String collectionName;
 
-    @Value("${spring.ai.vectorstore.milvus.embedding-dimension:1024}")
+    @Value("${spring.ai.vectorstore.milvus.embedding-dimension:728}")
     private int dimension;
+
+    @Value("${milvus.drop-collection-on-startup:false}")
+    private boolean dropCollectionOnStartup;
 
     @Override
     public void run(ApplicationArguments args){
@@ -63,6 +67,10 @@ public class MilvusInitializer implements ApplicationRunner {
             );
 
             log.info("Creating Milvus collection '{}' with dimension {}", collectionName, dimension);
+
+            if (dropCollectionOnStartup) {
+                dropCollection(milvusClient, collectionName);
+            }
 
             createFieldsAndSchema(milvusClient);
             createIndex(milvusClient);
@@ -81,13 +89,6 @@ public class MilvusInitializer implements ApplicationRunner {
     }
 
     private void createFieldsAndSchema(MilvusClient milvusClient){
-        FieldType idField = FieldType.newBuilder()
-                .withName("id")
-                .withDataType(DataType.Int64)
-                .withPrimaryKey(true)
-                .withAutoID(true)
-                .build();
-
         FieldType docIdField = FieldType.newBuilder()
                 .withName("doc_id")
                 .withDataType(DataType.VarChar)
@@ -112,7 +113,7 @@ public class MilvusInitializer implements ApplicationRunner {
                 .build();
 
         CollectionSchemaParam schema = CollectionSchemaParam.newBuilder()
-                .withFieldTypes(Arrays.asList(idField, docIdField, embeddingField, contentField, metadataField))
+                .withFieldTypes(Arrays.asList(docIdField, embeddingField, contentField, metadataField))
                 .build();
 
         CreateCollectionParam createCollectionParam = CreateCollectionParam.newBuilder()
@@ -139,5 +140,13 @@ public class MilvusInitializer implements ApplicationRunner {
         milvusClient.loadCollection(LoadCollectionParam.newBuilder()
                 .withCollectionName(collectionName)
                 .build());
+    }
+
+    private void dropCollection(MilvusClient milvusClient, String collectionName){
+        log.warn("Dropping existing collection '{}' as milvus.drop-collection-on-startup=true", collectionName);
+        milvusClient.dropCollection(DropCollectionParam.newBuilder()
+                .withCollectionName(collectionName)
+                .build());
+        log.info("Collection '{}' dropped successfully", collectionName);
     }
 }

@@ -56,7 +56,7 @@ public class AIService {
         this.documentJoinModule = documentJoinModule;
     }
 
-    public String simpleQueryTest(String query, String sessionId){
+    public String simpleQueryTest(String query, String sessionId) {
         return this.chatClient.prompt(query)
                 .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
                 .call()
@@ -64,14 +64,11 @@ public class AIService {
     }
 
     public Flux<String> RAGQueryTest(String query, String sessionId) {
-        // Step 1: Pre-retrieval - Query transformation pipeline with chat history
         Query finalQuery = queryTransformerModule.transformQuery(query, sessionId);
         finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
         finalQuery = translationQueryModule.translateQuery(finalQuery.text());
 
-        // Step 2: Query expansion - Generate multiple query variations
         List<Query> expandedQueries = queryExpansionModule.expandQueries(finalQuery);
-
         if (!expandedQueries.contains(finalQuery)) {
             List<Query> allQueries = new ArrayList<>(expandedQueries);
             allQueries.addFirst(finalQuery);
@@ -79,10 +76,8 @@ public class AIService {
         }
 
         Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
-
         for (Query expandedQuery : expandedQueries) {
-
-            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 10, 0.7);
+            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.3);
             queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
         }
 
@@ -90,69 +85,20 @@ public class AIService {
 
         List<Document> rankedDocs = documentPostProcessingModule.rankAndFilterDocuments(
                 joinedDocs,
-                finalQuery,  // Use original final query for ranking
-                0.7,         // Similarity threshold
-                5            // Top K documents
+                0.4,
+                10
         );
 
-        if (rankedDocs.isEmpty()){
+        if (rankedDocs.isEmpty()) {
             log.warn("No documents found for query: {}", query);
         }
 
         String context = rankedDocs.stream()
-                .map(Document::getFormattedContent)
-                .collect(Collectors.joining("\n\n"));
-
-        log.info("Response generated");
-        return chatClient.prompt()
-                .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
-                .user(u -> u
-                    .text("Context:\n{context}\n\nQuestion: {question}")
-                    .param("context", context)
-                    .param("question", query))
-                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
-                .stream()
-                .content();
-    }
-
-    public String RAGQueryTestNoFlux(String query, String sessionId){
-        // Step 1: Pre-retrieval - Query transformation pipeline with chat history
-        Query finalQuery = queryTransformerModule.transformQuery(query, sessionId);
-        finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
-        finalQuery = translationQueryModule.translateQuery(finalQuery.text());
-
-        // Step 2: Query expansion - Generate multiple query variations
-        List<Query> expandedQueries = queryExpansionModule.expandQueries(finalQuery);
-
-        if (!expandedQueries.contains(finalQuery)) {
-            List<Query> allQueries = new ArrayList<>(expandedQueries);
-            allQueries.addFirst(finalQuery);
-            expandedQueries = allQueries;
-        }
-
-        Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
-
-        for (Query expandedQuery : expandedQueries) {
-
-            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 10, 0.7);
-            queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
-        }
-
-        List<Document> joinedDocs = documentJoinModule.joinDocuments(queryToDocuments);
-
-        List<Document> rankedDocs = documentPostProcessingModule.rankAndFilterDocuments(
-                joinedDocs,
-                finalQuery,  // Use original final query for ranking
-                0.7,         // Similarity threshold
-                5            // Top K documents
-        );
-
-        if (rankedDocs.isEmpty()){
-            log.warn("No documents found for query: {}", query);
-        }
-
-        String context = rankedDocs.stream()
-                .map(Document::getFormattedContent)
+                .map(doc -> {
+                    String formatted = doc.getFormattedContent();
+                    int contentStart = formatted.indexOf('\n');
+                    return contentStart > 0 ? formatted.substring(contentStart + 1).trim() : formatted;
+                })
                 .collect(Collectors.joining("\n\n"));
 
         log.info("Response generated");
@@ -162,10 +108,8 @@ public class AIService {
                         .text("Context:\n{context}\n\nQuestion: {question}")
                         .param("context", context)
                         .param("question", query))
-                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId)).call().content();
+                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
+                .stream()
+                .content();
     }
-
-
-
-
 }
