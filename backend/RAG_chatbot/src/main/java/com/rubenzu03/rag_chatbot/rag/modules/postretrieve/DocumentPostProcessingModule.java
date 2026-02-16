@@ -15,61 +15,43 @@ public class DocumentPostProcessingModule {
 
     public List<Document> rankAndFilterDocuments(List<Document> documents,
                                                   double similarityThreshold, int topK) {
-        log.info("Starting document ranking with {} documents, threshold={}, topK={}",
-                 documents != null ? documents.size() : 0, similarityThreshold, topK);
-
-        if (documents == null || documents.isEmpty()) {
-            log.warn("No documents to rank - returning empty list");
-            return Collections.emptyList();
-        }
-
-        int initialCount = documents.size();
 
         Map<String, Document> uniqueDocs = new LinkedHashMap<>();
         for (Document doc : documents) {
-            String docId = extractDocumentId(doc);
-            if (!uniqueDocs.containsKey(docId) ||
-                getScore(doc) > getScore(uniqueDocs.get(docId))) {
+            String docId = getDocumentId(doc);
+            Document existing = uniqueDocs.get(docId);
+            if (existing == null || getScore(doc) > getScore(existing)) {
                 uniqueDocs.put(docId, doc);
             }
         }
 
-        log.debug("Deduplication: {} docs → {} unique docs", initialCount, uniqueDocs.size());
-
         List<Document> result = uniqueDocs.values().stream()
-                .sorted((d1, d2) -> {
-                    double s1 = getScore(d1);
-                    double s2 = getScore(d2);
-                    return Double.compare(s2, s1);
-                })
+                .sorted(Comparator.comparingDouble(this::getScore).reversed())
                 .filter(doc -> getScore(doc) >= similarityThreshold)
                 .limit(topK)
                 .collect(Collectors.toList());
 
-        log.info("Ranking complete: {} docs after threshold={} and top-{}",
-                 result.size(), similarityThreshold, topK);
+        log.info("Post-processing: {} → {} unique → {} filtered (threshold={}, top={})",
+                documents.size(), uniqueDocs.size(), result.size(), similarityThreshold, topK);
 
         return result;
     }
 
-    private String extractDocumentId(Document doc) {
+    private String getDocumentId(Document doc) {
         Map<String, Object> metadata = doc.getMetadata();
-
         Object parentId = metadata.get("parent_document_id");
+        Object chunkIndex = metadata.get("chunk_index");
+
+        if (parentId != null && chunkIndex != null) {
+            return parentId + "_" + chunkIndex;
+        }
         if (parentId != null) {
-            Object chunkIndex = metadata.get("chunk_index");
-            if (chunkIndex != null) {
-                return parentId + "_" + chunkIndex;
-            }
             return parentId.toString();
         }
-
-        String content = doc.getFormattedContent();
-        return String.valueOf(content.hashCode());
+        return String.valueOf(doc.getFormattedContent().hashCode());
     }
 
     private double getScore(Document doc) {
-        Double score = doc.getScore();
-        return (score != null) ? score : 0.0;
+        return doc.getScore() != null ? doc.getScore() : 0.0;
     }
 }
