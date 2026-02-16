@@ -91,6 +91,7 @@ public class MilvusInitializer implements ApplicationRunner {
     private void createFieldsAndSchema(MilvusClient milvusClient){
         FieldType docIdField = FieldType.newBuilder()
                 .withName("doc_id")
+                .withPrimaryKey(true)
                 .withDataType(DataType.VarChar)
                 .withMaxLength(36)
                 .build();
