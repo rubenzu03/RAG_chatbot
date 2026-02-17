@@ -11,6 +11,10 @@ import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +32,7 @@ public class AIService {
     private static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
 
     private final ChatClient chatClient;
+    private final ChatMemory chatMemory;
 
     private static final Logger log = LoggerFactory.getLogger(AIService.class);
 
@@ -42,11 +47,13 @@ public class AIService {
 
     @Autowired
     public AIService(@Qualifier("llama3ChatClient") ChatClient chatClient,
+                     ChatMemory chatMemory,
                      TranslationQueryModule translationQueryModule,
                      RewriteQueryModule rewriteQueryModule, QueryTransformerModule queryTransformerModule, QueryExpansionModule queryExpansionModule,
                      DocumentSearchModule documentSearchModule,
                      DocumentPostProcessingModule documentPostProcessingModule, DocumentJoinModule documentJoinModule) {
         this.chatClient = chatClient;
+        this.chatMemory = chatMemory;
         this.translationQueryModule = translationQueryModule;
         this.rewriteQueryModule = rewriteQueryModule;
         this.queryTransformerModule = queryTransformerModule;
@@ -64,6 +71,10 @@ public class AIService {
     }
 
     public Flux<String> RAGQueryTest(String query, String sessionId) {
+        List<Message> historyMessages = chatMemory.get(sessionId);
+
+        chatMemory.add(sessionId, new UserMessage(query));
+
         Query finalQuery = queryTransformerModule.transformQuery(query, sessionId);
         finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
         finalQuery = translationQueryModule.translateQuery(finalQuery.text());
@@ -101,15 +112,27 @@ public class AIService {
                 })
                 .collect(Collectors.joining("\n\n"));
 
-        log.info("Response generated");
+        log.info("Response generated with {} documents", rankedDocs.size());
+
+        List<Message> allMessages = new ArrayList<>(historyMessages);
+
+        String promptWithContext = String.format(
+                "Context:\n%s\n\nQuestion: %s",
+                context,
+                query
+        );
+        StringBuilder fullResponse = new StringBuilder();
+
         return chatClient.prompt()
                 .system(ChatClientConfig.DEFAULT_SYSTEM_PROMPT)
-                .user(u -> u
-                        .text("Context:\n{context}\n\nQuestion: {question}")
-                        .param("context", context)
-                        .param("question", query))
-                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
+                .messages(allMessages)
+                .user(promptWithContext)
                 .stream()
-                .content();
+                .content()
+                .doOnNext(fullResponse::append)
+                .doOnComplete(() -> {
+                    chatMemory.add(sessionId, new AssistantMessage(fullResponse.toString()));
+                    log.info("Response saved to chat memory for session: {}", sessionId);
+                });
     }
 }

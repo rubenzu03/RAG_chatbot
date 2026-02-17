@@ -1,3 +1,0 @@
-org.springframework.boot.env.EnvironmentPostProcessor=\
-com.rubenzu03.rag_chatbot.config.EnvFileEnvironmentPostProcessor
-
