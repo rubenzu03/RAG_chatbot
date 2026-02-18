@@ -4,6 +4,14 @@ import ReactMarkdown from 'react-markdown';
 
 import { sendMessage } from './api';
 
+// Fix for markdown rendering
+function normalizeMarkdown(text: string): string {
+  return text
+    .replace(/([^\n])(\d+\.\s)/g, '$1\n\n$2')
+    .replace(/([^\n])([-*+]\s)/g, '$1\n\n$2')
+    .replace(/\n{3,}/g, '\n\n');
+}
+
 export default function ChatbotMain() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -39,15 +47,12 @@ export default function ChatbotMain() {
           return updated;
         });
       },
-      // onSessionId - update session if backend returns a new one
       (newSessionId) => {
         setSessionId(newSessionId);
       },
-      // onComplete
       () => {
         setIsLoading(false);
       },
-      // onError
       (error) => {
         console.error('Stream error:', error);
         setMessages((prev) => {
@@ -136,7 +141,7 @@ export default function ChatbotMain() {
                   </div> */}
 
                   <div className="markdown-content wrapbreak-words">
-                    {message.content ? (<ReactMarkdown>{message.content}</ReactMarkdown>) : (
+                    {message.content ? (<ReactMarkdown>{normalizeMarkdown(message.content)}</ReactMarkdown>) : (
                       <span className="inline-flex gap-1">
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
