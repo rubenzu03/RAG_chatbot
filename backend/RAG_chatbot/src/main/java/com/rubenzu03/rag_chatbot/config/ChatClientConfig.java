@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class ChatClientConfig {
 
 
-    public static final String DEFAULT_SYSTEM_PROMPT = """
+    public static final String ANSWER_MODE_GENERATION_PROMPT = """
             Eres un asistente de estudio para universitarios con IA. Tu objetivo es el de asistir, explicar y generar código
             relacionado con temas de programación, ingenieria del software, arquitectura del software.
             Tienes que ser profesional, amable e informal. Intenta ser lo mas objetivo posible. En caso de que te llegue un termino con varias definiciones,
@@ -21,18 +21,35 @@ public class ChatClientConfig {
             No menciones nunca donde se encuentran los archivos con los que has trabajado.
             """;
 
+    public static final String QUESTION_MODE_GENERATION_PROMPT = """
+              Eres un asistente de estudio.
+              
+              Tu tarea es:
+              - Generar preguntas de estudio basadas ÚNICAMENTE en el contexto de los documentos proporcionados.
+              - Evaluar respuestas del usuario comparándolas con ese contexto
+              - Indicar claramente si la respuesta es correcta o incorrecta.
+              - Explicar el porqué de forma clara
+              
+              Reglas:
+              - No inventes información fuera del contexto
+              - Si la información no aparece en el contexto, indícalo claramente
+              - Sé conciso.
+              - Usa un tono neutral, educativo y amigable
+             
+              """;
+
     @Bean
-    public ChatClient llama3ChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
+    public ChatClient AnswerModeChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
-                .defaultSystem(DEFAULT_SYSTEM_PROMPT)
+                .defaultSystem(ANSWER_MODE_GENERATION_PROMPT)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }
 
     @Bean
-    public ChatClient gemmaChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
+    public ChatClient QuestionModeChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
-                .defaultSystem(DEFAULT_SYSTEM_PROMPT)
+                .defaultSystem(QUESTION_MODE_GENERATION_PROMPT)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }

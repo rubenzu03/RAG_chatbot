@@ -3,7 +3,7 @@ package com.rubenzu03.rag_chatbot.controller;
 import com.rubenzu03.rag_chatbot.domain.Session;
 import com.rubenzu03.rag_chatbot.dto.ChatResponse;
 import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
-import com.rubenzu03.rag_chatbot.service.AIService;
+import com.rubenzu03.rag_chatbot.service.AnswerModeService;
 import com.rubenzu03.rag_chatbot.service.SessionService;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -23,14 +23,14 @@ import java.util.stream.Collectors;
 
 @Controller
 public class AIController {
-    private final AIService aiService;
+    private final AnswerModeService answerModeService;
     private final SessionService sessionService;
     private final DocumentSearchModule documentSearchModule;
 
     @Autowired
-    public AIController(AIService aiService, SessionService sessionService,
+    public AIController(AnswerModeService answerModeService, SessionService sessionService,
                         DocumentSearchModule documentSearchModule) {
-        this.aiService = aiService;
+        this.answerModeService = answerModeService;
         this.sessionService = sessionService;
         this.documentSearchModule = documentSearchModule;
     }
@@ -43,7 +43,7 @@ public class AIController {
         Session session = sessionService.getOrCreateSession(sessionId);
         String actualSessionId = session.getSessionId();
 
-        String response = aiService.simpleQueryTest(query, actualSessionId);
+        String response = answerModeService.answerSimpleQuery(query, actualSessionId);
 
         return ResponseEntity.ok(new ChatResponse(response, actualSessionId));
     }
@@ -58,7 +58,7 @@ public class AIController {
 
         return Flux.concat(
                 Flux.just("[SESSION:" + actualSessionId + "]"),
-                aiService.RAGQueryTest(query, actualSessionId)
+                answerModeService.AnswerWithRagQuery(query, actualSessionId)
         );
     }
 
