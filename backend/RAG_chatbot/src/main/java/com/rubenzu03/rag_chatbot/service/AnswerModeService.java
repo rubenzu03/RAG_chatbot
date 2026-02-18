@@ -51,6 +51,7 @@ public class AnswerModeService {
     }
 
     public Flux<String> AnswerWithRagQuery(String query, String sessionId) {
+        //TODO: Separar el get de la chat memory de aqui
         List<Message> historyMessages = chatMemory.get(sessionId);
 
         chatMemory.add(sessionId, new UserMessage(query));
