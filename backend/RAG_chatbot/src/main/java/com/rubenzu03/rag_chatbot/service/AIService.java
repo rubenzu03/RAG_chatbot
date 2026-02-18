@@ -129,7 +129,24 @@ public class AIService {
                 .user(promptWithContext)
                 .stream()
                 .content()
-                .doOnNext(fullResponse::append)
+                .doOnNext(token -> {
+                    fullResponse.append(token);
+
+                    log.info("[STREAM_TOKEN] session={} token=[{}]", sessionId, token.replace("\n", "\\n"));
+
+                    char[] chars = token.toCharArray();
+                    for (int i = 0; i < chars.length; i++) {
+                        char c = chars[i];
+                        String repr;
+                        if (c == '\n') repr = "\\n";
+                        else if (c == '\r') repr = "\\r";
+                        else if (c == '\t') repr = "\\t";
+                        else if (Character.isISOControl(c)) repr = String.format("\\u%04x", (int) c);
+                        else repr = Character.toString(c);
+
+                        log.debug("[STREAM_CHAR] session={} tokenIdx={} charIdx={} char='{}' code={}", sessionId, /* token index not tracked */ 0, i, repr, (int) c);
+                    }
+                })
                 .doOnComplete(() -> {
                     chatMemory.add(sessionId, new AssistantMessage(fullResponse.toString()));
                     log.info("Response saved to chat memory for session: {}", sessionId);
