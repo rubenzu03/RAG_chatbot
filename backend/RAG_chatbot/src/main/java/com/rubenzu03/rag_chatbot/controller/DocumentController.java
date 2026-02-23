@@ -29,16 +29,14 @@ public class DocumentController {
     @GetMapping("/api/ai/debug/search")
     public ResponseEntity<Map<String, Object>> debugSearch(
             @RequestParam(name = "query") String query,
-            @RequestParam(name = "topK", defaultValue = "20") int topK,
-            @RequestParam(name = "threshold", defaultValue = "0.0") double threshold) {
+            @RequestParam(name = "topK", defaultValue = "20") int topK) {
 
         List<Document> results = retrievalService.retrieveDocuments(
-                new Query(query), topK, threshold);
+                new Query(query), topK);
 
         Map<String, Object> response = new HashMap<>();
         response.put("query", query);
         response.put("topK", topK);
-        response.put("threshold", threshold);
         response.put("resultsCount", results.size());
         response.put("results", results.stream()
                 .map(doc -> {

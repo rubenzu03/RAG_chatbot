@@ -25,22 +25,26 @@ import java.util.stream.Collectors;
 public class AnswerModeService {
 
     private static final String CHAT_MEMORY_CONVERSATION_ID_KEY = "chat_memory_conversation_id";
+    private final int TOP_K_SEARCH = 10;
 
     private final RetrievalService retrievalService;
     private final RAGContextBuilder ragContextBuilder;
     private final ChatClient chatClient;
     private final ChatHistoryService chatHistoryService;
+    private final TransformQueryService transformQueryService;
 
     private static final Logger log = LoggerFactory.getLogger(AnswerModeService.class);
 
 
     @Autowired
     public AnswerModeService(@Qualifier("AnswerModeChatClient") ChatClient chatClient,
-                             ChatHistoryService chatHistoryService, RetrievalService retrievalService, RAGContextBuilder ragContextBuilder) {
+                             ChatHistoryService chatHistoryService, RetrievalService retrievalService,
+                             RAGContextBuilder ragContextBuilder, TransformQueryService transformQueryService) {
         this.chatClient = chatClient;
         this.chatHistoryService = chatHistoryService;
         this.retrievalService = retrievalService;
         this.ragContextBuilder = ragContextBuilder;
+        this.transformQueryService = transformQueryService;
     }
 
     public String answerSimpleQuery(String query, String sessionId) {
@@ -51,16 +55,15 @@ public class AnswerModeService {
     }
 
     public Flux<String> AnswerWithRagQuery(String query, String sessionId) {
-        //TODO: Separar el get de la chat memory de aqui
-
         List<Message> historyMessages = chatHistoryService.getChatHistory(sessionId);
 
         chatHistoryService.addUserMessage(sessionId, new UserMessage(query));
 
-        List<Document> rankedDocs = retrievalService.retrieveDocuments(new Query(query), sessionId, 10);
+        Query transformedQuery = transformQueryService.transformQuery(new Query(query),sessionId);
+        List<Document> rankedDocs = retrievalService.retrieveDocuments(transformedQuery, TOP_K_SEARCH);
 
         if (rankedDocs.isEmpty()) {
-            log.warn("No documents found for query: {}", query);
+            log.warn("No documents found for query: {}", transformedQuery.text());
         }
 
         String context = ragContextBuilder.buildRAGContext(rankedDocs);

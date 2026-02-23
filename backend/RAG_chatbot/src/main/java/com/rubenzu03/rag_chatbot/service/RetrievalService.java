@@ -37,14 +37,8 @@ public class RetrievalService {
         this.documentPostProcessingModule = documentPostProcessingModule;
     }
 
-    //TODO: Desacoplar el sessionId de aqui 
 
-    public List<Document> (Query query, String sessionId) {
-        return retrieveDocuments(query, sessionId, 5);
-    }
-
-    public List<Document> retrieveDocuments(Query query, int topK) {
-        Query finalQuery = transformQuery(query, sessionId);
+    public List<Document> retrieveDocuments(Query finalQuery, int topK) {
         finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
         finalQuery = translationQueryModule.translateQuery(finalQuery.text());
 
@@ -68,10 +62,6 @@ public class RetrievalService {
                 0.4,
                 topK
         );
-    }
-
-    private Query transformQuery(Query query, String sessionId) {
-        return queryTransformerModule.transformQuery(query.text(), sessionId);
     }
 
 
