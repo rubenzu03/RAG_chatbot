@@ -62,39 +62,4 @@ public class AIController {
         );
     }
 
-
-    @GetMapping("/api/ai/debug/search")
-    public ResponseEntity<Map<String, Object>> debugSearch(
-            @RequestParam(name = "query") String query,
-            @RequestParam(name = "topK", defaultValue = "20") int topK,
-            @RequestParam(name = "threshold", defaultValue = "0.0") double threshold) {
-
-        List<Document> results = documentSearchModule.retrieveDocuments(
-                new Query(query), topK, threshold);
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("query", query);
-        response.put("topK", topK);
-        response.put("threshold", threshold);
-        response.put("resultsCount", results.size());
-        response.put("results", results.stream()
-                .map(doc -> {
-                    Map<String, Object> docMap = new HashMap<>();
-                    docMap.put("score", doc.getScore());
-                    docMap.put("content", truncate(doc.getFormattedContent(), 2000));
-                    docMap.put("metadata", doc.getMetadata());
-                    return docMap;
-                })
-                .collect(Collectors.toList()));
-
-        return ResponseEntity.ok(response);
-    }
-
-    private String truncate(String text, int maxLength) {
-        if (text == null) return "";
-        String cleaned = text.replaceAll("\\s+", " ").trim();
-        return cleaned.length() > maxLength
-                ? cleaned.substring(0, maxLength) + "..."
-                : cleaned;
-    }
 }

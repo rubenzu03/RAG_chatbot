@@ -29,16 +29,16 @@ public class AnswerModeService {
     private final RetrievalService retrievalService;
     private final RAGContextBuilder ragContextBuilder;
     private final ChatClient chatClient;
-    private final ChatMemory chatMemory;
+    private final ChatHistoryService chatHistoryService;
 
     private static final Logger log = LoggerFactory.getLogger(AnswerModeService.class);
 
 
     @Autowired
     public AnswerModeService(@Qualifier("AnswerModeChatClient") ChatClient chatClient,
-                             ChatMemory chatMemory, RetrievalService retrievalService, RAGContextBuilder ragContextBuilder) {
+                             ChatHistoryService chatHistoryService, RetrievalService retrievalService, RAGContextBuilder ragContextBuilder) {
         this.chatClient = chatClient;
-        this.chatMemory = chatMemory;
+        this.chatHistoryService = chatHistoryService;
         this.retrievalService = retrievalService;
         this.ragContextBuilder = ragContextBuilder;
     }
@@ -52,9 +52,10 @@ public class AnswerModeService {
 
     public Flux<String> AnswerWithRagQuery(String query, String sessionId) {
         //TODO: Separar el get de la chat memory de aqui
-        List<Message> historyMessages = chatMemory.get(sessionId);
 
-        chatMemory.add(sessionId, new UserMessage(query));
+        List<Message> historyMessages = chatHistoryService.getChatHistory(sessionId);
+
+        chatHistoryService.addUserMessage(sessionId, new UserMessage(query));
 
         List<Document> rankedDocs = retrievalService.retrieveDocuments(new Query(query), sessionId, 10);
 
@@ -85,25 +86,28 @@ public class AnswerModeService {
                 .content()
                 .doOnNext(token -> {
                     fullResponse.append(token);
-
-                    log.info("[STREAM_TOKEN] session={} token=[{}]", sessionId, token.replace("\n", "\\n"));
-
-                    char[] chars = token.toCharArray();
-                    for (int i = 0; i < chars.length; i++) {
-                        char c = chars[i];
-                        String repr;
-                        if (c == '\n') repr = "\\n";
-                        else if (c == '\r') repr = "\\r";
-                        else if (c == '\t') repr = "\\t";
-                        else if (Character.isISOControl(c)) repr = String.format("\\u%04x", (int) c);
-                        else repr = Character.toString(c);
-
-                        log.debug("[STREAM_CHAR] session={} tokenIdx={} charIdx={} char='{}' code={}", sessionId, /* token index not tracked */ 0, i, repr, (int) c);
-                    }
+                    debugStream(token, sessionId);
                 })
                 .doOnComplete(() -> {
-                    chatMemory.add(sessionId, new AssistantMessage(fullResponse.toString()));
+                    chatHistoryService.addAssistantMessage(sessionId,new AssistantMessage(fullResponse.toString()));
                     log.info("Response saved to chat memory for session: {}", sessionId);
                 });
+    }
+
+    private void debugStream(String token, String sessionId){
+        log.info("[STREAM_TOKEN] session={} token=[{}]", sessionId, token.replace("\n", "\\n"));
+
+        char[] chars = token.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
+            String repr;
+            if (c == '\n') repr = "\\n";
+            else if (c == '\r') repr = "\\r";
+            else if (c == '\t') repr = "\\t";
+            else if (Character.isISOControl(c)) repr = String.format("\\u%04x", (int) c);
+            else repr = Character.toString(c);
+
+            log.debug("[STREAM_CHAR] session={} tokenIdx={} charIdx={} char='{}' code={}", sessionId, /* token index not tracked */ 0, i, repr, (int) c);
+        }
     }
 }

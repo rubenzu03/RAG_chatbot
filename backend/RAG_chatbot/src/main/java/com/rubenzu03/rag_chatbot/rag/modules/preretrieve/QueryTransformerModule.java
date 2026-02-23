@@ -48,6 +48,8 @@ public class QueryTransformerModule {
                 .build();
     }
 
+    //TODO: Quitar el sessionId de aqui
+
     public Query transformQuery(String rawQuery, String sessionId) {
         List<Message> historyMessages = getConversationHistory(sessionId);
 

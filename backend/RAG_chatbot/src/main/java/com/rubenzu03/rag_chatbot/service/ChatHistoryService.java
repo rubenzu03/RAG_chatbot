@@ -25,8 +25,8 @@ public class ChatHistoryService {
         chatMemory.add(sessionId, message);
     }
 
-    public void addAssistantMessage(String sessionId, String message) {
-        chatMemory.add(sessionId, new AssistantMessage(message));
+    public void addAssistantMessage(String sessionId, Message message) {
+        chatMemory.add(sessionId, message);
     }
 
 
