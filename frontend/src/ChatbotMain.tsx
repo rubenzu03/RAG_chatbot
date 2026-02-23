@@ -20,6 +20,10 @@ export default function ChatbotMain() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  useEffect(() => {
+    document.title = 'Conversation : ' + sessionId;
+  }, [sessionId]);
+
   const handleSend = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput || isLoading) return;
