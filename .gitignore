@@ -63,3 +63,4 @@ build/
 
 ### RAG Files ###
 /rag_files
+.DS_Store

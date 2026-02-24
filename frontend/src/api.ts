@@ -122,47 +122,44 @@ export async function streamRagQuery(
       throw new Error(`API request failed with status ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
+    const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
-    let sessionIdExtracted = false;
+    let dataLines: string[] = [];
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-
       const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      buffer = lines.pop() ?? '';
 
       for (const line of lines) {
         if (line.startsWith('data:')) {
-          const data = line.slice(5);
+          dataLines.push(line.slice(5));
+        } else if (line.trim() === '') {
+          if (dataLines.length > 0) {
+            const data = dataLines.join('\n');
+            dataLines = [];
 
-          if (!sessionIdExtracted && data.trim().startsWith('[SESSION:')) {
-            const match = data.match(/\[SESSION:([^\]]+)\]/);
-            if (match) {
-              const newSessionId = match[1];
-              const existingSessionId = localStorage.getItem(SESSION_KEY);
-              if (!existingSessionId) {
-                setSessionId(newSessionId);
-                onSessionId(newSessionId);
-              }
-              sessionIdExtracted = true;
-              const remaining = data.replace(/\[SESSION:[^\]]+\]/, '').trimStart();
-              if (remaining) {
-                onToken(remaining);
-              }
+            const sessionMatch = data.match(/^\[SESSION:([^\]]+)\]/);
+            if (sessionMatch) {
+              onSessionId(sessionMatch[1]);
+              const rest = data.slice(sessionMatch[0].length);
+              if (rest) onToken(rest);
               continue;
             }
-          }
 
-          if (data.trim() && data.trim() !== '[DONE]') {
-            onToken(data);
+            if (data !== '[DONE]') onToken(data);
           }
         }
       }
+    }
+
+    if (dataLines.length > 0) {
+      const data = dataLines.join('\n');
+      if (data !== '[DONE]') onToken(data);
     }
 
     onComplete();
