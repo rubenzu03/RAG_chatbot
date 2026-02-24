@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class ChatClientConfig {
 
 
-    public static final String DEFAULT_SYSTEM_PROMPT = """
+    public static final String ANSWER_MODE_GENERATION_PROMPT = """
             Eres un asistente de estudio para universitarios con IA. Tu objetivo es el de asistir, explicar y generar código
             relacionado con temas de programación, ingenieria del software, arquitectura del software.
             Tienes que ser profesional, amable e informal. Intenta ser lo mas objetivo posible. En caso de que te llegue un termino con varias definiciones,
@@ -21,20 +21,52 @@ public class ChatClientConfig {
             No menciones nunca donde se encuentran los archivos con los que has trabajado.
             """;
 
-    @Bean
-    public ChatClient llama3ChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
+    public static final String QUESTION_GENERATION_PROMPT = """
+            Contexto:
+            %s
+            
+            Genera UNA pregunta de estudio clara y concreta basada únicamente en el contexto.
+            La pregunta debe:
+            - Evaluar comprensión conceptual, no memoria literal
+            - Tener una respuesta verificable en el contexto
+            
+            Devuelve SOLO la pregunta, sin explicaciones adicionales.
+            ""\";
+            """;
+
+    public static final String EVALUATION_PROMPT = """
+            Contexto:
+            %s
+            
+            Pregunta:
+            %s
+            
+            Respuesta:
+            %s
+            
+            Evalúa la respuesta siguiendo estas reglas:
+            1. Indica primero si es CORRECTA o INCORRECTA.
+            2. Explica el porqué basándote únicamente en el contexto.
+            3. Si la respuesta es parcialmente correcta, indícalo claramente.
+            4. No introduzcas información que no esté en el contexto.
+            
+            Formato de salida:
+            - Resultado: CORRECTA | INCORRECTA | PARCIAL
+            - Explicación: texto breve y claro
+                        ""\";
+            """;
+
+    @Bean("AnswerModeChatClient")
+    public ChatClient AnswerModeChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
-                .defaultSystem(DEFAULT_SYSTEM_PROMPT)
+                .defaultSystem(ANSWER_MODE_GENERATION_PROMPT)
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
     }
 
-    @Bean
-    public ChatClient gemmaChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
-        return ChatClient.builder(chatModel)
-                .defaultSystem(DEFAULT_SYSTEM_PROMPT)
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-                .build();
+    @Bean("QuestionModeChatClient")
+    public ChatClient QuestionModeChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
+        return ChatClient.builder(chatModel).build();
     }
 
 
