@@ -1,8 +1,100 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { streamRagQuery, getOrCreateSessionId, clearSessionId, type ChatMessage } from './api';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 import { sendMessage } from './api';
+
+function CopyButton({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [code]);
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+    >
+      {copied ? (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy code
+        </>
+      )}
+    </button>
+  );
+}
+
+// Overrides markdown for proper code block render 
+const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
+  code({ className, children, ref: _ref, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    const codeString = String(children).replace(/\n$/, '');
+    const isBlock = match || codeString.includes('\n');
+
+    if (isBlock) {
+      const lang = match?.[1] ?? 'text';
+      return (
+        <div className="code-block-wrapper rounded-lg overflow-hidden my-3 border border-[#3a3a3a]">
+          <div className="flex items-center justify-between bg-[#2f2f2f] px-4 py-2">
+            <span className="text-xs text-gray-400 select-none">{lang}</span>
+            <CopyButton code={codeString} />
+          </div>
+          <SyntaxHighlighter
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            style={oneDark as any}
+            language={lang}
+            PreTag="div"
+            wrapLongLines
+            customStyle={{
+              margin: 0,
+              padding: '1rem 1.25rem',
+              background: '#1e1e1e',
+              fontSize: '0.85rem',
+              lineHeight: '1.65',
+              borderRadius: 0,
+            }}
+            codeTagProps={{
+              style: {
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              },
+            }}
+          >
+            {codeString}
+          </SyntaxHighlighter>
+        </div>
+      );
+    }
+
+    return (
+      <code className="inline-code" {...props}>
+        {children}
+      </code>
+    );
+  },
+  pre({ children }) {
+    return <>{children}</>;
+  },
+};
+
+function autoBottomScroll(){
+  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+}
 
 // Fix for markdown rendering
 function normalizeMarkdown(text: string): string {
@@ -18,11 +110,47 @@ export default function ChatbotMain() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string>(() => getOrCreateSessionId());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  autoBottomScroll();
 
   useEffect(() => {
     document.title = 'Conversation : ' + sessionId;
   }, [sessionId]);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const onScroll = () => {
+      const threshold = 150;
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      autoScrollRef.current = distanceFromBottom < threshold;
+    };
+
+    container.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => container.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    if (!autoScrollRef.current) return;
+
+    if (isLoading) {
+      container.scrollTop = container.scrollHeight;
+    } else {
+      try {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      } catch (e) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }
+  }, [messages, isLoading]);
 
   const handleSend = async () => {
     const trimmedInput = input.trim();
@@ -112,7 +240,7 @@ export default function ChatbotMain() {
           Delete Data
         </button>
       </div>
-      <div className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <h2 className="text-xl font-semibold text-gray-300 mb-2">Welcome to RAG Chatbot</h2>
@@ -144,8 +272,15 @@ export default function ChatbotMain() {
                     </span>
                   </div> */}
 
-                  <div className="markdown-content wrapbreak-words">
-                    {message.content ? (<ReactMarkdown>{normalizeMarkdown(message.content)}</ReactMarkdown>) : (
+                  <div className="markdown-content break-words">
+                    {message.content ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownComponents}
+                      >
+                        {normalizeMarkdown(message.content)}
+                      </ReactMarkdown>
+                    ) : (
                       <span className="inline-flex gap-1">
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                         <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
