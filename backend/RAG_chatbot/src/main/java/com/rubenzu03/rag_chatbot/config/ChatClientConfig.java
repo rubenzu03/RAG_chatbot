@@ -21,24 +21,42 @@ public class ChatClientConfig {
             No menciones nunca donde se encuentran los archivos con los que has trabajado.
             """;
 
-    public static final String QUESTION_MODE_GENERATION_PROMPT = """
-              Eres un asistente de estudio.
-              
-              Tu tarea es:
-              - Generar preguntas de estudio basadas ÚNICAMENTE en el contexto de los documentos proporcionados.
-              - Evaluar respuestas del usuario comparándolas con ese contexto
-              - Indicar claramente si la respuesta es correcta o incorrecta.
-              - Explicar el porqué de forma clara
-              
-              Reglas:
-              - No inventes información fuera del contexto
-              - Si la información no aparece en el contexto, indícalo claramente
-              - Sé conciso.
-              - Usa un tono neutral, educativo y amigable
-             
-              """;
+    public static final String QUESTION_GENERATION_PROMPT = """
+            Contexto:
+            %s
+            
+            Genera UNA pregunta de estudio clara y concreta basada únicamente en el contexto.
+            La pregunta debe:
+            - Evaluar comprensión conceptual, no memoria literal
+            - Tener una respuesta verificable en el contexto
+            
+            Devuelve SOLO la pregunta, sin explicaciones adicionales.
+            ""\";
+            """;
 
-    @Bean
+    public static final String EVALUATION_PROMPT = """
+            Contexto:
+            %s
+            
+            Pregunta:
+            %s
+            
+            Respuesta:
+            %s
+            
+            Evalúa la respuesta siguiendo estas reglas:
+            1. Indica primero si es CORRECTA o INCORRECTA.
+            2. Explica el porqué basándote únicamente en el contexto.
+            3. Si la respuesta es parcialmente correcta, indícalo claramente.
+            4. No introduzcas información que no esté en el contexto.
+            
+            Formato de salida:
+            - Resultado: CORRECTA | INCORRECTA | PARCIAL
+            - Explicación: texto breve y claro
+                        ""\";
+            """;
+
+    @Bean("AnswerModeChatClient")
     public ChatClient AnswerModeChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
         return ChatClient.builder(chatModel)
                 .defaultSystem(ANSWER_MODE_GENERATION_PROMPT)
@@ -46,12 +64,9 @@ public class ChatClientConfig {
                 .build();
     }
 
-    @Bean
+    @Bean("QuestionModeChatClient")
     public ChatClient QuestionModeChatClient(OllamaChatModel chatModel, ChatMemory chatMemory) {
-        return ChatClient.builder(chatModel)
-                .defaultSystem(QUESTION_MODE_GENERATION_PROMPT)
-                .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
-                .build();
+        return ChatClient.builder(chatModel).build();
     }
 
 

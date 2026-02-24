@@ -12,7 +12,5 @@ import lombok.Setter;
 public class QuestionResponse {
     private String question;
     private String context;
-    private String questionId;
-    private String sessionId;
 }
 
