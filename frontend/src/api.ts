@@ -125,6 +125,7 @@ export async function streamRagQuery(
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
+    let dataLines: string[] = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -135,19 +136,30 @@ export async function streamRagQuery(
       buffer = lines.pop() ?? '';
 
       for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5);
+        if (line.startsWith('data:')) {
+          dataLines.push(line.slice(5));
+        } else if (line.trim() === '') {
+          if (dataLines.length > 0) {
+            const data = dataLines.join('\n');
+            dataLines = [];
 
-        const sessionMatch = data.match(/^\[SESSION:([^\]]+)\]/);
-        if (sessionMatch) {
-          onSessionId(sessionMatch[1]);
-          const rest = data.slice(sessionMatch[0].length);
-          if (rest) onToken(rest);
-          continue;
+            const sessionMatch = data.match(/^\[SESSION:([^\]]+)\]/);
+            if (sessionMatch) {
+              onSessionId(sessionMatch[1]);
+              const rest = data.slice(sessionMatch[0].length);
+              if (rest) onToken(rest);
+              continue;
+            }
+
+            if (data !== '[DONE]') onToken(data);
+          }
         }
-
-        if (data !== '[DONE]') onToken(data);
       }
+    }
+
+    if (dataLines.length > 0) {
+      const data = dataLines.join('\n');
+      if (data !== '[DONE]') onToken(data);
     }
 
     onComplete();
