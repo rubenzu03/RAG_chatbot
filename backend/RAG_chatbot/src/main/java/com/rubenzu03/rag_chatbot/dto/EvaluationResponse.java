@@ -13,7 +13,5 @@ public class EvaluationResponse {
     //TODO: use enum for results
     private String result;
     private String explanation;
-    private String questionId;
-    private String sessionId;
 }
 

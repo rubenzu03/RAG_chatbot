@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class QuestionResponse {
+    private String questionId;
     private String question;
-    private String context;
 }
 
