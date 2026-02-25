@@ -64,3 +64,4 @@ build/
 ### RAG Files ###
 /rag_files
 .DS_Store
+backend/RAG_chatbot/src/main/resources/env.properties
