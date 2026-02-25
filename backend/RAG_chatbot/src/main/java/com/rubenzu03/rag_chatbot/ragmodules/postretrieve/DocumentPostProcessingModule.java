@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.rag.modules.postretrieve;
+package com.rubenzu03.rag_chatbot.ragmodules.postretrieve;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

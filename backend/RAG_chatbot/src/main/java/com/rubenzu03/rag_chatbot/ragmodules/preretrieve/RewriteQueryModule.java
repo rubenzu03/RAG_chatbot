@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.rag.modules.preretrieve;
+package com.rubenzu03.rag_chatbot.ragmodules.preretrieve;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.rag.Query;

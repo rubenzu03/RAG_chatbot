@@ -1,6 +1,5 @@
 package com.rubenzu03.rag_chatbot.controller;
 
-import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
 import com.rubenzu03.rag_chatbot.service.RetrievalService;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
