@@ -27,5 +27,6 @@ public class User {
         this.email = email;
         this.password = password;
         this.createdAt = new Timestamp(System.currentTimeMillis());
+        this.lastLoginAt = new Timestamp(System.currentTimeMillis());
     }
 }

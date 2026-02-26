@@ -1,12 +1,9 @@
 import axios from 'axios';
-import * as dotenv from 'dotenv';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
 const SESSION_KEY = 'chatbot_session_id';
-
-//TODO: Setup env
-// dotenv.config
+const TOKEN_KEY = 'auth_token';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,6 +11,45 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function removeToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+export function isAuthenticated(): boolean {
+  return !!getToken();
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function login(email: string, password: string): Promise<string> {
+  const response = await api.post('/auth/signin', { email, password });
+  const token = response.data;
+  setToken(token);
+  return token;
+}
+
+export async function register(email: string, password: string): Promise<string> {
+  const response = await api.post('/auth/signup', { email, password });
+  return response.data;
+}
+
+export function logout(): void {
+  removeToken();
+  localStorage.removeItem(SESSION_KEY);
+}
 
 export function getOrCreateSessionId(): string {
   let sessionId = localStorage.getItem(SESSION_KEY);
@@ -33,7 +69,7 @@ export async function clearSessionId(): Promise<boolean> {
   if (!param) return false;
 
   try{
-    await api.delete(`/ai/chat/${param}`);
+    await api.delete(`/ai/chat/${param}`, { headers: authHeaders() });
     localStorage.removeItem(SESSION_KEY);
     return true;
   } catch (error) {
@@ -64,6 +100,7 @@ export async function sendMessage(message: string, sessionId?: string): Promise<
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...authHeaders(),
     },
   });
 
@@ -81,6 +118,7 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
       },
     });
 
@@ -115,6 +153,7 @@ export async function streamRagQuery(
       method: 'POST',
       headers: {
         Accept: 'text/event-stream',
+        ...authHeaders(),
       },
     });
 

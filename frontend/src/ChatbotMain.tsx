@@ -1,11 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { streamRagQuery, getOrCreateSessionId, clearSessionId, type ChatMessage } from './api';
+import { useNavigate } from 'react-router-dom';
+import { streamRagQuery, getOrCreateSessionId, clearSessionId, logout, type ChatMessage } from './api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-
-import { sendMessage } from './api';
 
 function CopyButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -40,9 +39,9 @@ function CopyButton({ code }: { code: string }) {
   );
 }
 
-// Overrides markdown for proper code block render 
+// Overrides markdown for proper code block render
 const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
-  code({ className, children, ref: _ref, ...props }) {
+  code({ className, children,...props }) {
     const match = /language-(\w+)/.exec(className || '');
     const codeString = String(children).replace(/\n$/, '');
     const isBlock = match || codeString.includes('\n');
@@ -113,11 +112,17 @@ export default function ChatbotMain() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+  };
 
   autoBottomScroll();
 
   useEffect(() => {
-    document.title = 'Conversation : ' + sessionId;
+    document.title = 'Chatbot';
   }, [sessionId]);
 
   useEffect(() => {
@@ -147,6 +152,7 @@ export default function ChatbotMain() {
       try {
         container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
       } catch (e) {
+        console.warn(e);
         container.scrollTop = container.scrollHeight;
       }
     }
@@ -238,6 +244,12 @@ export default function ChatbotMain() {
           onClick={handleDataDeletion}
         >
           Delete Data
+        </button>
+        <button
+          className="text-white bg-gray-600 px-4 py-2 rounded-lg ml-2 hover:bg-gray-700"
+          onClick={handleLogout}
+        >
+          Logout
         </button>
       </div>
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark">
