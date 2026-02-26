@@ -108,4 +108,8 @@ public class QuestionModeService {
 
         return new EvaluationResponse(result, explanation);
     }
+
+    public void deleteAllQuestions() {
+        generatedQuestionRepository.deleteAll();
+    }
 }

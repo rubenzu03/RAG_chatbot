@@ -61,4 +61,7 @@ public class SessionService {
         return sessionRepository.findById(sessionId).orElse(null);
     }
 
+    public void deleteAllSessions() {
+        sessionRepository.deleteAll();
+    }
 }
