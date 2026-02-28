@@ -50,10 +50,13 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-dark">
+    <div className="min-h-screen justify-center bg-primary-dark">
+      <div className="min-h-screen flex items-center justify-center bg-primary-dark">
       <div className="w-full max-w-md bg-[#2f2f2f] rounded-2xl shadow-lg p-8">
-        {/* Tabs */}
-        <div className="flex mb-6 border-b border-[#3a3a3a]">
+        <div className="mb-8 text-center">
+          <h1 className="text-2xl font-semibold text-gray-200">Login or signup to Chatbot</h1>
+        </div>
+        <div className="flex mb-6 border-b border-[#898989]">
           <button
             onClick={() => {
               setMode('login');
@@ -87,7 +90,7 @@ export default function AuthPage() {
         {}
         {error && (
           <div className="mb-4 p-3 rounded-lg bg-red-500/20 text-red-300 text-sm">
-            Login failed
+            {error}
           </div>
         )}
         {success && (
@@ -96,7 +99,13 @@ export default function AuthPage() {
           </div>
         )}
 
-        <form action={handleAction} className="flex flex-col gap-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleAction();
+          }}
+          className="flex flex-col gap-4"
+        >
           <div>
             <label className="block text-sm text-gray-300 mb-1">Email</label>
             <input
@@ -144,6 +153,7 @@ export default function AuthPage() {
           </button>
         </form>
       </div>
+    </div>
     </div>
   );
 }

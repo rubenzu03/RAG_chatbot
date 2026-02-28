@@ -1,6 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { streamRagQuery, getOrCreateSessionId, clearSessionId, logout, type ChatMessage } from './api';
+import {
+  streamRagQuery,
+  getOrCreateSessionId,
+  clearSessionId,
+  logout,
+  type ChatMessage,
+} from './api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -30,7 +36,12 @@ function CopyButton({ code }: { code: string }) {
       ) : (
         <>
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
           Copy code
         </>
@@ -41,7 +52,7 @@ function CopyButton({ code }: { code: string }) {
 
 // Overrides markdown for proper code block render
 const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
-  code({ className, children,...props }) {
+  code({ className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || '');
     const codeString = String(children).replace(/\n$/, '');
     const isBlock = match || codeString.includes('\n');
@@ -91,10 +102,6 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
   },
 };
 
-function autoBottomScroll(){
-  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-}
-
 // Fix for markdown rendering
 function normalizeMarkdown(text: string): string {
   return text
@@ -116,10 +123,8 @@ export default function ChatbotMain() {
 
   const handleLogout = () => {
     logout();
-    navigate('/auth');
+    navigate('/auth', { replace: true });
   };
-
-  autoBottomScroll();
 
   useEffect(() => {
     document.title = 'Chatbot';
@@ -131,7 +136,8 @@ export default function ChatbotMain() {
 
     const onScroll = () => {
       const threshold = 150;
-      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const distanceFromBottom =
+        container.scrollHeight - container.scrollTop - container.clientHeight;
       autoScrollRef.current = distanceFromBottom < threshold;
     };
 
@@ -252,7 +258,10 @@ export default function ChatbotMain() {
           Logout
         </button>
       </div>
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark"
+      >
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
             <h2 className="text-xl font-semibold text-gray-300 mb-2">Welcome to RAG Chatbot</h2>
@@ -286,10 +295,7 @@ export default function ChatbotMain() {
 
                   <div className="markdown-content break-words">
                     {message.content ? (
-                      <ReactMarkdown
-                        remarkPlugins={[remarkGfm]}
-                        components={markdownComponents}
-                      >
+                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                         {normalizeMarkdown(message.content)}
                       </ReactMarkdown>
                     ) : (
