@@ -15,7 +15,7 @@ public class TransformQueryService {
         this.queryTransformer = queryTransformer;
     }
 
-    public Query transformQuery(Query query, String sessionId){
-        return queryTransformer.transformQuery(query.text(), sessionId);
+    public Query transformQuery(Query query, String userId){
+        return queryTransformer.transformQuery(query.text(), userId);
     }
 }

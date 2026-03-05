@@ -2,7 +2,6 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:8080/api';
 
-const SESSION_KEY = 'chatbot_session_id';
 const TOKEN_KEY = 'auth_token';
 
 const api = axios.create({
@@ -11,7 +10,6 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
-
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
@@ -48,35 +46,16 @@ export async function register(email: string, password: string): Promise<string>
 
 export function logout(): void {
   removeToken();
-  localStorage.removeItem(SESSION_KEY);
 }
 
-export function getOrCreateSessionId(): string {
-  let sessionId = localStorage.getItem(SESSION_KEY);
-  if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    localStorage.setItem(SESSION_KEY, sessionId);
-  }
-  return sessionId;
-}
-
-export function setSessionId(sessionId: string): void {
-  localStorage.setItem(SESSION_KEY, sessionId);
-}
-
-export async function clearSessionId(): Promise<boolean> {
-  const param = localStorage.getItem(SESSION_KEY);
-  if (!param) return false;
-
-  try{
-    await api.delete(`/ai/chat/${param}`, { headers: authHeaders() });
-    localStorage.removeItem(SESSION_KEY);
+export async function clearChatHistory(): Promise<boolean> {
+  try {
+    await api.delete('/ai/chat/history', { headers: authHeaders() });
     return true;
   } catch (error) {
-    console.error('Error clearing session:', error);
+    console.error('Error clearing chat history:', error);
     return false;
   }
-
 }
 
 export interface ChatMessage {
@@ -89,11 +68,9 @@ export interface ChatResponse {
   conversationId: string;
 }
 
-export async function sendMessage(message: string, sessionId?: string): Promise<ChatResponse> {
-  const sid = sessionId || getOrCreateSessionId();
+export async function sendMessage(message: string): Promise<ChatResponse> {
   const params = new URLSearchParams({
     query: message,
-    sessionId: sid,
   });
 
   const response = await fetch(`${API_BASE_URL}/ai/test/query?${params}`, {
@@ -112,9 +89,9 @@ export async function sendMessage(message: string, sessionId?: string): Promise<
   return data;
 }
 
-export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> {
+export async function getChatHistory(): Promise<ChatMessage[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/ai/chat/?sessionId=${sessionId}`, {
+    const response = await fetch(`${API_BASE_URL}/ai/chat/history`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -128,24 +105,68 @@ export async function getChatHistory(sessionId: string): Promise<ChatMessage[]> 
 
     const data = await response.json();
     return data.history as ChatMessage[];
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Error fetching chat history:', error);
     return [];
   }
 }
 
+// ── Question Mode API ──
+
+export interface QuestionResponse {
+  questionId: string;
+  question: string;
+}
+
+export interface EvaluationRequest {
+  questionId: string;
+  answer: string;
+}
+
+export interface EvaluationResponse {
+  result: string; // "CORRECTA" | "INCORRECTA" | "PARCIAL"
+  explanation: string;
+}
+
+export async function generateQuestion(): Promise<QuestionResponse> {
+  const response = await fetch(`${API_BASE_URL}/question-mode/generate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Generate question failed with status ${response.status}`);
+  }
+  return response.json();
+}
+
+export async function evaluateAnswer(req: EvaluationRequest): Promise<EvaluationResponse> {
+  const response = await fetch(`${API_BASE_URL}/question-mode/evaluate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify(req),
+  });
+  if (!response.ok) {
+    throw new Error(`Evaluate answer failed with status ${response.status}`);
+  }
+  return response.json();
+}
+
+// ── Chat / RAG API ──
+
 export async function streamRagQuery(
   message: string,
-  sessionId: string,
   onToken: (token: string) => void,
-  onSessionId: (sessionId: string) => void,
   onComplete: () => void,
   onError: (error: Error) => void
 ): Promise<void> {
   const params = new URLSearchParams({
     query: message,
-    sessionId: sessionId,
   });
 
   try {
@@ -182,13 +203,6 @@ export async function streamRagQuery(
             const data = dataLines.join('\n');
             dataLines = [];
 
-            const sessionMatch = data.match(/^\[SESSION:([^\]]+)\]/);
-            if (sessionMatch) {
-              onSessionId(sessionMatch[1]);
-              const rest = data.slice(sessionMatch[0].length);
-              if (rest) onToken(rest);
-              continue;
-            }
 
             if (data !== '[DONE]') onToken(data);
           }

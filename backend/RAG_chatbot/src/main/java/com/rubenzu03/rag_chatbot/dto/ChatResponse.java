@@ -7,14 +7,14 @@ import lombok.Setter;
 @Getter
 public class ChatResponse {
     private String response;
-    private String sessionId;
+    private String userId;
 
     public ChatResponse() {
     }
 
-    public ChatResponse(String response, String sessionId) {
+    public ChatResponse(String response, String userId) {
         this.response = response;
-        this.sessionId = sessionId;
+        this.userId = userId;
     }
 
 }

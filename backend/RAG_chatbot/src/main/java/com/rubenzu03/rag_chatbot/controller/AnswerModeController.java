@@ -1,13 +1,11 @@
 package com.rubenzu03.rag_chatbot.controller;
 
-import com.rubenzu03.rag_chatbot.domain.Session;
 import com.rubenzu03.rag_chatbot.dto.ChatResponse;
-import com.rubenzu03.rag_chatbot.ragmodules.retrieve.DocumentSearchModule;
 import com.rubenzu03.rag_chatbot.service.AnswerModeService;
-import com.rubenzu03.rag_chatbot.service.SessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -16,39 +14,33 @@ import reactor.core.publisher.Flux;
 @RestController
 public class AnswerModeController {
     private final AnswerModeService answerModeService;
-    private final SessionService sessionService;
 
     @Autowired
-    public AnswerModeController(AnswerModeService answerModeService, SessionService sessionService) {
+    public AnswerModeController(AnswerModeService answerModeService) {
         this.answerModeService = answerModeService;
-        this.sessionService = sessionService;
+    }
+
+    private String getAuthenticatedUserEmail() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     @PostMapping("/api/ai/test")
     public ResponseEntity<ChatResponse> askQuery(
-            @RequestParam(name = "query") String query,
-            @RequestParam(name = "sessionId", required = false) String sessionId) {
+            @RequestParam(name = "query") String query){
 
-        Session session = sessionService.getOrCreateSession(sessionId);
-        String actualSessionId = session.getSessionId();
+        String userId = getAuthenticatedUserEmail();
+        String response = answerModeService.answerSimpleQuery(query, userId);
 
-        String response = answerModeService.answerSimpleQuery(query, actualSessionId);
-
-        return ResponseEntity.ok(new ChatResponse(response, actualSessionId));
+        return ResponseEntity.ok(new ChatResponse(response, userId));
     }
 
     @PostMapping(value = "/api/ai/test/ragquery", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> askQueryUsingRAG(
-            @RequestParam(name = "query") String query,
-            @RequestParam(name = "sessionId", required = false) String sessionId) {
+            @RequestParam(name = "query") String query) {
 
-        Session session = sessionService.getOrCreateSession(sessionId);
-        String actualSessionId = session.getSessionId();
+        String userId = getAuthenticatedUserEmail();
 
-        return Flux.concat(
-                Flux.just("[SESSION:" + actualSessionId + "]"),
-                answerModeService.AnswerWithRagQuery(query, actualSessionId)
-        );
+        return answerModeService.AnswerWithRagQuery(query, userId);
     }
 
 }
