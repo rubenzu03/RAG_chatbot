@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.rag.modules.retrieve;
+package com.rubenzu03.rag_chatbot.ragmodules.retrieve;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -6,29 +6,14 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever;
-import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-/**
- * Document Search Module for RAG retrieval.
- *
- * Uses vector similarity search to find relevant documents.
- * The search is based on COSINE similarity between the query embedding
- * and document embeddings stored in Milvus.
- *
- * Key parameters:
- * - topK: Maximum number of documents to retrieve
- * - similarityThreshold: Minimum cosine similarity score (0.0 to 1.0)
- *   - 1.0 = identical vectors
- *   - 0.0 = orthogonal vectors (no similarity)
- *   - Recommended: 0.3-0.5 for semantic search (lower catches more results)
- */
+
 @Service
 public class DocumentSearchModule {
 

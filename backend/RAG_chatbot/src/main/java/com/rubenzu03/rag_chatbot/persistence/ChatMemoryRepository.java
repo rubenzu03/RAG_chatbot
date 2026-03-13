@@ -14,8 +14,8 @@ public class ChatMemoryRepository {
         this.jdbc = jdbc;
     }
 
-    public void deleteBySessionId(String sessionId) {
-        jdbc.update("DELETE FROM spring_ai_chat_memory WHERE conversation_id = ?", sessionId);
+    public void deleteByUserId(String userId) {
+        jdbc.update("DELETE FROM spring_ai_chat_memory WHERE conversation_id = ?", userId);
     }
 
     @SuppressWarnings("'Delete' statement without 'where' clears all data in the table ")
@@ -23,9 +23,9 @@ public class ChatMemoryRepository {
         jdbc.update("DELETE FROM spring_ai_chat_memory");
     }
 
-    public List<ChatResponse> getChatHistoryBySessionId(String sessionId){
+    public List<ChatResponse> getChatHistoryByUserId(String userId){
         return jdbc.query("SELECT * FROM spring_ai_chat_memory WHERE conversation_id = ?",
                 (rs, rowNum) -> new ChatResponse(rs.getString("response"), rs.getString("conversation_id")),
-                sessionId);
+                userId);
     }
 }

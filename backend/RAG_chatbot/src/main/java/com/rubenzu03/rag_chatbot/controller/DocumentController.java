@@ -1,6 +1,5 @@
 package com.rubenzu03.rag_chatbot.controller;
 
-import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
 import com.rubenzu03.rag_chatbot.service.RetrievalService;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -42,7 +41,7 @@ public class DocumentController {
                 .map(doc -> {
                     Map<String, Object> docMap = new HashMap<>();
                     docMap.put("score", doc.getScore());
-                    docMap.put("content", truncate(doc.getFormattedContent(), 2000));
+                    docMap.put("content", truncate(doc.getFormattedContent()));
                     docMap.put("metadata", doc.getMetadata());
                     return docMap;
                 })
@@ -51,11 +50,11 @@ public class DocumentController {
         return ResponseEntity.ok(response);
     }
 
-    private String truncate(String text, int maxLength) {
+    private String truncate(String text) {
         if (text == null) return "";
         String cleaned = text.replaceAll("\\s+", " ").trim();
-        return cleaned.length() > maxLength
-                ? cleaned.substring(0, maxLength) + "..."
+        return cleaned.length() > 2000
+                ? cleaned.substring(0, 2000) + "..."
                 : cleaned;
     }
 }

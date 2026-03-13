@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.rag.modules.retrieve;
+package com.rubenzu03.rag_chatbot.ragmodules.retrieve;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;

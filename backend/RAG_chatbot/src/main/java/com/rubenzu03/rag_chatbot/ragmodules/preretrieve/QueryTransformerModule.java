@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.rag.modules.preretrieve;
+package com.rubenzu03.rag_chatbot.ragmodules.preretrieve;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,13 +48,11 @@ public class QueryTransformerModule {
                 .build();
     }
 
-    //TODO: Quitar el sessionId de aqui
-
-    public Query transformQuery(String rawQuery, String sessionId) {
-        List<Message> historyMessages = getConversationHistory(sessionId);
+    public Query transformQuery(String rawQuery, String userId) {
+        List<Message> historyMessages = getConversationHistory(userId);
 
         log.info("=== QueryTransformer Debug ===");
-        log.info("Session ID: {}", sessionId);
+        log.info("User ID: {}", userId);
         log.info("Raw Query: {}", rawQuery);
         log.info("History messages count: {}", historyMessages.size());
 
@@ -83,10 +81,10 @@ public class QueryTransformerModule {
         return transformedQuery;
     }
 
-    private List<Message> getConversationHistory(String sessionId) {
-        if (sessionId == null || sessionId.isBlank()) {
+    private List<Message> getConversationHistory(String userId) {
+        if (userId == null || userId.isBlank()) {
             return Collections.emptyList();
         }
-        return chatMemory.get(sessionId);
+        return chatMemory.get(userId);
     }
 }

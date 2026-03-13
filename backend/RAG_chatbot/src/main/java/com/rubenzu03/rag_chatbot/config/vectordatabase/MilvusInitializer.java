@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.config;
+package com.rubenzu03.rag_chatbot.config.vectordatabase;
 
 import io.milvus.client.MilvusClient;
 import io.milvus.client.MilvusServiceClient;
@@ -7,7 +7,6 @@ import io.milvus.param.ConnectParam;
 import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.DropCollectionParam;
 import io.milvus.param.collection.FieldType;
-import io.milvus.param.collection.HasCollectionParam;
 import io.milvus.param.collection.CollectionSchemaParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;

@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.config;
+package com.rubenzu03.rag_chatbot.config.vectordatabase;
 
 import com.knuddels.jtokkit.api.EncodingType;
 import org.springframework.ai.embedding.BatchingStrategy;

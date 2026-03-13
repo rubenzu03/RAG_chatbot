@@ -49,6 +49,7 @@ public class ChatClientConfig {
             2. Explica el porqué basándote únicamente en el contexto.
             3. Si la respuesta es parcialmente correcta, indícalo claramente.
             4. No introduzcas información que no esté en el contexto.
+            5. Si la respuesta recibida sugiere que el usuario no conoce la respuesta, evalúa la respuesta como INCORRECTA
             
             Formato de salida:
             - Resultado: CORRECTA | INCORRECTA | PARCIAL
