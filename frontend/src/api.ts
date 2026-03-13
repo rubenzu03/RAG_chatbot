@@ -73,7 +73,7 @@ export async function sendMessage(message: string): Promise<ChatResponse> {
     query: message,
   });
 
-  const response = await fetch(`${API_BASE_URL}/ai/test/query?${params}`, {
+  const response = await fetch(`${API_BASE_URL}/ai/ragquery?${params}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -170,7 +170,7 @@ export async function streamRagQuery(
   });
 
   try {
-    const response = await fetch(`${API_BASE_URL}/ai/test/ragquery?${params}`, {
+    const response = await fetch(`${API_BASE_URL}/ai/ragquery?${params}`, {
       method: 'POST',
       headers: {
         Accept: 'text/event-stream',

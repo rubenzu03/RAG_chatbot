@@ -24,7 +24,7 @@ public class AnswerModeController {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
-    @PostMapping("/api/ai/test")
+    @PostMapping("/api/ai/simplequery")
     public ResponseEntity<ChatResponse> askQuery(
             @RequestParam(name = "query") String query){
 
@@ -34,7 +34,7 @@ public class AnswerModeController {
         return ResponseEntity.ok(new ChatResponse(response, userId));
     }
 
-    @PostMapping(value = "/api/ai/test/ragquery", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping(value = "/api/ai/ragquery", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> askQueryUsingRAG(
             @RequestParam(name = "query") String query) {
 

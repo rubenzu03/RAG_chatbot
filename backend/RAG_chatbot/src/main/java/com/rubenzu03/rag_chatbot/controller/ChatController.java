@@ -11,6 +11,8 @@ import java.util.List;
 @RestController
 public class ChatController {
 
+    //TODO: Refactor this to use a service layer instead of directly accessing the repository from the controller
+
     private final ChatMemoryRepository chatMemoryRepository;
 
     public ChatController(ChatMemoryRepository chatMemoryRepository) {
