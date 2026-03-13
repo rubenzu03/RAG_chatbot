@@ -2,6 +2,8 @@ package com.rubenzu03.rag_chatbot.controller;
 
 import com.rubenzu03.rag_chatbot.dto.ChatResponse;
 import com.rubenzu03.rag_chatbot.persistence.ChatMemoryRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -9,19 +11,29 @@ import java.util.List;
 @RestController
 public class ChatController {
 
+    //TODO: Refactor this to use a service layer instead of directly accessing the repository from the controller
+
     private final ChatMemoryRepository chatMemoryRepository;
 
     public ChatController(ChatMemoryRepository chatMemoryRepository) {
         this.chatMemoryRepository = chatMemoryRepository;
     }
 
-    @GetMapping("/api/ai/chat/{sessionId}")
-    public List<ChatResponse> getChatResponsesBySessionId(@PathVariable String sessionId){
-        return chatMemoryRepository.getChatHistoryBySessionId(sessionId);
+    private String getAuthenticatedUserEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
     }
 
-    @DeleteMapping("/api/ai/chat/{sessionId}")
-    public void deleteChatHistoryBySessionId(@PathVariable String sessionId){
-        chatMemoryRepository.deleteBySessionId(sessionId);
+
+    @GetMapping("/api/ai/chat/history")
+    public List<ChatResponse> getChatHistory(){
+        String userId = getAuthenticatedUserEmail();
+        return chatMemoryRepository.getChatHistoryByUserId(userId);
+    }
+
+    @DeleteMapping("/api/ai/chat/history")
+    public void deleteChatHistory(){
+        String userId = getAuthenticatedUserEmail();
+        chatMemoryRepository.deleteByUserId(userId);
     }
 }

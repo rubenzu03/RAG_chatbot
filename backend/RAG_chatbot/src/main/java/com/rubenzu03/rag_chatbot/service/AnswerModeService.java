@@ -5,13 +5,11 @@ import com.rubenzu03.rag_chatbot.config.ChatClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
-import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -19,7 +17,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 public class AnswerModeService {
@@ -47,19 +44,19 @@ public class AnswerModeService {
         this.transformQueryService = transformQueryService;
     }
 
-    public String answerSimpleQuery(String query, String sessionId) {
+    public String answerSimpleQuery(String query, String userId) {
         return this.chatClient.prompt(query)
-                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, sessionId))
+                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, userId))
                 .call()
                 .content();
     }
 
-    public Flux<String> AnswerWithRagQuery(String query, String sessionId) {
-        List<Message> historyMessages = chatHistoryService.getChatHistory(sessionId);
+    public Flux<String> AnswerWithRagQuery(String query, String userId) {
+        List<Message> historyMessages = chatHistoryService.getChatHistory(userId);
 
-        chatHistoryService.addUserMessage(sessionId, new UserMessage(query));
+        chatHistoryService.addUserMessage(userId, new UserMessage(query));
 
-        Query transformedQuery = transformQueryService.transformQuery(new Query(query),sessionId);
+        Query transformedQuery = transformQueryService.transformQuery(new Query(query), userId);
         List<Document> rankedDocs = retrievalService.retrieveDocuments(transformedQuery, TOP_K_SEARCH);
 
         if (rankedDocs.isEmpty()) {
@@ -79,8 +76,6 @@ public class AnswerModeService {
         );
         StringBuilder fullResponse = new StringBuilder();
 
-        //TODO: Mover esto a otra parte
-
         return chatClient.prompt()
                 .system(ChatClientConfig.ANSWER_MODE_GENERATION_PROMPT)
                 .messages(allMessages)
@@ -89,16 +84,16 @@ public class AnswerModeService {
                 .content()
                 .doOnNext(token -> {
                     fullResponse.append(token);
-                    debugStream(token, sessionId);
+                    debugStream(token, userId);
                 })
                 .doOnComplete(() -> {
-                    chatHistoryService.addAssistantMessage(sessionId,new AssistantMessage(fullResponse.toString()));
-                    log.info("Response saved to chat memory for session: {}", sessionId);
+                    chatHistoryService.addAssistantMessage(userId, new AssistantMessage(fullResponse.toString()));
+                    log.info("Response saved to chat memory for user: {}", userId);
                 });
     }
 
-    private void debugStream(String token, String sessionId){
-        log.info("[STREAM_TOKEN] session={} token=[{}]", sessionId, token.replace("\n", "\\n"));
+    private void debugStream(String token, String userId) {
+        log.info("[STREAM_TOKEN] user={} token=[{}]", userId, token.replace("\n", "\\n"));
 
         char[] chars = token.toCharArray();
         for (int i = 0; i < chars.length; i++) {
@@ -110,7 +105,7 @@ public class AnswerModeService {
             else if (Character.isISOControl(c)) repr = String.format("\\u%04x", (int) c);
             else repr = Character.toString(c);
 
-            log.debug("[STREAM_CHAR] session={} tokenIdx={} charIdx={} char='{}' code={}", sessionId, /* token index not tracked */ 0, i, repr, (int) c);
+            log.debug("[STREAM_CHAR] user={} tokenIdx={} charIdx={} char='{}' code={}", userId, 0, i, repr, (int) c);
         }
     }
 }

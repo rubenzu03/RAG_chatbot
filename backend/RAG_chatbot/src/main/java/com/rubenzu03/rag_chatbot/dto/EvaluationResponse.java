@@ -10,7 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class EvaluationResponse {
-    //TODO: use enum for results
     private String result;
     private String explanation;
 }

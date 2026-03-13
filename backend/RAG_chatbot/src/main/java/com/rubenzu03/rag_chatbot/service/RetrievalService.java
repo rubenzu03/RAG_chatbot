@@ -1,12 +1,12 @@
 package com.rubenzu03.rag_chatbot.service;
 
-import com.rubenzu03.rag_chatbot.rag.modules.postretrieve.DocumentPostProcessingModule;
-import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryExpansionModule;
-import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.QueryTransformerModule;
-import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.RewriteQueryModule;
-import com.rubenzu03.rag_chatbot.rag.modules.preretrieve.TranslationQueryModule;
-import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentJoinModule;
-import com.rubenzu03.rag_chatbot.rag.modules.retrieve.DocumentSearchModule;
+import com.rubenzu03.rag_chatbot.ragmodules.postretrieve.DocumentPostProcessingModule;
+import com.rubenzu03.rag_chatbot.ragmodules.preretrieve.QueryExpansionModule;
+import com.rubenzu03.rag_chatbot.ragmodules.preretrieve.QueryTransformerModule;
+import com.rubenzu03.rag_chatbot.ragmodules.preretrieve.RewriteQueryModule;
+import com.rubenzu03.rag_chatbot.ragmodules.preretrieve.TranslationQueryModule;
+import com.rubenzu03.rag_chatbot.ragmodules.retrieve.DocumentJoinModule;
+import com.rubenzu03.rag_chatbot.ragmodules.retrieve.DocumentSearchModule;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.stereotype.Service;

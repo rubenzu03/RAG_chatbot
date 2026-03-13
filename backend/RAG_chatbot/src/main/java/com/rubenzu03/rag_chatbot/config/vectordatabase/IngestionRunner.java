@@ -1,4 +1,4 @@
-package com.rubenzu03.rag_chatbot.config;
+package com.rubenzu03.rag_chatbot.config.vectordatabase;
 
 import com.rubenzu03.rag_chatbot.service.IngestionService;
 import org.springframework.boot.ApplicationArguments;

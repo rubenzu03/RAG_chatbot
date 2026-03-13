@@ -6,6 +6,8 @@ import com.rubenzu03.rag_chatbot.domain.Question;
 import com.rubenzu03.rag_chatbot.dto.EvaluationRequest;
 import com.rubenzu03.rag_chatbot.dto.EvaluationResponse;
 import com.rubenzu03.rag_chatbot.dto.QuestionResponse;
+import com.rubenzu03.rag_chatbot.exception.DocumentsNotFoundException;
+import com.rubenzu03.rag_chatbot.exception.QuestionNotFoundException;
 import com.rubenzu03.rag_chatbot.persistence.GeneratedQuestionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,8 +44,7 @@ public class QuestionModeService {
         List<Document> docs = retrievalService.retrieveDocuments(new Query("*"), 30);
 
         if (docs.isEmpty()) {
-            log.error("No documents found");
-            return new QuestionResponse(null, "No se encontraron documentos para generar preguntas.");
+            throw new DocumentsNotFoundException("No documents found");
         }
 
         Collections.shuffle(docs);
@@ -57,7 +58,6 @@ public class QuestionModeService {
                 .user(prompt)
                 .call().content();
 
-        // Persistir la pregunta y su contexto
         Question entity = new Question();
         entity.setQuestion(question);
         entity.setContext(context);
@@ -67,11 +67,10 @@ public class QuestionModeService {
     }
 
     public EvaluationResponse evaluateAnswer(EvaluationRequest evaluationRequest) {
-        // Recuperar la pregunta y contexto por ID
         Question question = generatedQuestionRepository
                 .findById(evaluationRequest.getQuestionId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Pregunta no encontrada con ID: " + evaluationRequest.getQuestionId()));
+                .orElseThrow(() -> new QuestionNotFoundException(
+                        "Question not found: " + evaluationRequest.getQuestionId()));
 
         String prompt = String.format(
                 ChatClientConfig.EVALUATION_PROMPT,
@@ -107,5 +106,9 @@ public class QuestionModeService {
         }
 
         return new EvaluationResponse(result, explanation);
+    }
+
+    public void deleteAllQuestions() {
+        generatedQuestionRepository.deleteAll();
     }
 }
