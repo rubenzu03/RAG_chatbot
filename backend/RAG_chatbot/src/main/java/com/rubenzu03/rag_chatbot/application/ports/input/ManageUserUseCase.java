@@ -1,10 +1,10 @@
 package com.rubenzu03.rag_chatbot.application.ports.input;
 
-import com.rubenzu03.rag_chatbot.domain.model.User;
+import com.rubenzu03.rag_chatbot.domain.dto.UserDto;
 
 public interface ManageUserUseCase {
-    User registerUser(User user);
-    User getUserProfile(Long id);
+    UserDto registerUser(UserDto userDto);
+    UserDto getUserProfile(Long id);
     boolean checkUserExists(String email);
 }
 

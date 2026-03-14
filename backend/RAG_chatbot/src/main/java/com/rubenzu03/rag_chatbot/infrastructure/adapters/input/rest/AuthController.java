@@ -3,7 +3,7 @@ package com.rubenzu03.rag_chatbot.infrastructure.adapters.input.rest;
 import com.rubenzu03.rag_chatbot.domain.dto.UserDto;
 import com.rubenzu03.rag_chatbot.application.service.AuthenticationManagerService;
 import com.rubenzu03.rag_chatbot.application.service.JwtUtilsService;
-import com.rubenzu03.rag_chatbot.application.service.UserService;
+import com.rubenzu03.rag_chatbot.application.ports.input.ManageUserUseCase;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -16,14 +16,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    private final UserService userService;
+    private final ManageUserUseCase manageUserUseCase;
     private final JwtUtilsService jwtUtilsService;
     private final AuthenticationManagerService authenticationManagerService;
 
     @Autowired
-    public AuthController(AuthenticationManagerService authManagerService, JwtUtilsService jwtUtilsService, UserService userService) {
+    public AuthController(AuthenticationManagerService authManagerService, JwtUtilsService jwtUtilsService, ManageUserUseCase manageUserUseCase) {
         this.authenticationManagerService = authManagerService;
-        this.userService = userService;
+        this.manageUserUseCase = manageUserUseCase;
         this.jwtUtilsService = jwtUtilsService;
     }
 
@@ -35,10 +35,10 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<String> registerUser(@RequestBody UserDto userDto) {
-        if (userService.checkUserExists(userDto.email())) {
+        if (manageUserUseCase.checkUserExists(userDto.email())) {
             return ResponseEntity.badRequest().body("User already exists");
         }
-        userService.createUser(userDto);
+        manageUserUseCase.registerUser(userDto);
         return ResponseEntity.ok("User registered successfully");
     }
 
