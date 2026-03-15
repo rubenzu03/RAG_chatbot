@@ -11,14 +11,14 @@ import java.sql.Timestamp;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class User {
+public class UserDTO {
     private Long id;
     private String email;
     private String password;
     private Timestamp createdAt;
     private Timestamp lastLoginAt;
 
-    public User(String email, String password) {
+    public UserDTO(String email, String password) {
         this.email = email;
         this.password = password;
         this.createdAt = new Timestamp(System.currentTimeMillis());

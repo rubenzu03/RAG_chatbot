@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class ChatMemoryAdapter implements ChatMemoryPort {
+public class ChatMemoryPersistenceAdapter implements ChatMemoryPort {
 
     private final ChatMemoryRepository chatMemoryRepository;
 
-    public ChatMemoryAdapter(ChatMemoryRepository chatMemoryRepository) {
+    public ChatMemoryPersistenceAdapter(ChatMemoryRepository chatMemoryRepository) {
         this.chatMemoryRepository = chatMemoryRepository;
     }
 

@@ -9,14 +9,14 @@ import java.sql.Timestamp;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Question {
+public class QuestionDTO {
 
     private String id;
     private String question;
     private String context;
     private Timestamp createdAt;
 
-    public Question(String id, String question, String context, Timestamp createdAt) {
+    public QuestionDTO(String id, String question, String context, Timestamp createdAt) {
         this.id = id;
         this.question = question;
         this.context = context;

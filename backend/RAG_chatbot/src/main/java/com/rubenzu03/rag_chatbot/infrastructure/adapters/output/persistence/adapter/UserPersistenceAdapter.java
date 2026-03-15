@@ -1,7 +1,7 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.adapter;
 
 import com.rubenzu03.rag_chatbot.application.ports.output.UserRepositoryPort;
-import com.rubenzu03.rag_chatbot.domain.model.User;
+import com.rubenzu03.rag_chatbot.domain.model.UserDTO;
 import com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.DataUserRepository;
 import com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.entity.UserEntity;
 import com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.mapper.UserMapper;
@@ -21,21 +21,20 @@ public class UserPersistenceAdapter implements UserRepositoryPort {
     }
 
     @Override
-    public User save(User user) {
+    public UserDTO save(UserDTO user) {
         UserEntity entity = userMapper.toEntity(user);
-        UserEntity saved = dataUserRepository.save(entity);
-        userMapper.toDomain(saved);
-        return user;
+        UserEntity savedEntity = dataUserRepository.save(entity);
+        return userMapper.toDto(savedEntity);
     }
 
     @Override
-    public Optional<User> findByEmail(String email) {
-        return dataUserRepository.findByEmail(email).map(userMapper::toDomain);
+    public Optional<UserDTO> findByEmail(String email) {
+        return dataUserRepository.findByEmail(email).map(userMapper::toDto);
     }
 
     @Override
-    public Optional<User> findById(Long id) {
-        return dataUserRepository.findById(id).map(userMapper::toDomain);
+    public Optional<UserDTO> findById(Long id) {
+        return dataUserRepository.findById(id).map(userMapper::toDto);
     }
 
     @Override

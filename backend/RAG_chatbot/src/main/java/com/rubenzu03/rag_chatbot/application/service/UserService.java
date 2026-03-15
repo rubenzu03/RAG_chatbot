@@ -1,11 +1,11 @@
 package com.rubenzu03.rag_chatbot.application.service;
 
 import com.rubenzu03.rag_chatbot.application.ports.output.UserRepositoryPort;
-import com.rubenzu03.rag_chatbot.domain.model.User;
 import com.rubenzu03.rag_chatbot.application.ports.input.ManageUserUseCase;
-import com.rubenzu03.rag_chatbot.domain.dto.UserDto;
+import com.rubenzu03.rag_chatbot.domain.model.UserDTO;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public class UserService implements ManageUserUseCase {
@@ -19,20 +19,19 @@ public class UserService implements ManageUserUseCase {
     }
 
     @Override
-    public UserDto registerUser(UserDto userDto) {
-        if (checkUserExists(userDto.email())){
+    public UserDTO registerUser(UserDTO userDto) {
+        if (checkUserExists(userDto.getEmail())){
             throw new RuntimeException("User already exists");
         }
+        userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
-        User newUser = new User(userDto.email(), passwordEncoder.encode(userDto.password()));
-        UserDto newUserDto = new UserDto(newUser.getEmail(), newUser.getPassword());
-        userRepositoryPort.save(newUser);
-        return newUserDto;
+        return userRepositoryPort.save(userDto);
     }
 
     @Override
-    public UserDto getUserProfile(Long id) {
-        return null;
+    public UserDTO getUserProfile(Long id) {
+        return userRepositoryPort.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
     public boolean checkUserExists(String email){

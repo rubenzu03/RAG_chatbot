@@ -1,9 +1,9 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.input.rest;
 
-import com.rubenzu03.rag_chatbot.domain.dto.UserDto;
 import com.rubenzu03.rag_chatbot.application.service.AuthenticationManagerService;
 import com.rubenzu03.rag_chatbot.application.service.JwtUtilsService;
 import com.rubenzu03.rag_chatbot.application.ports.input.ManageUserUseCase;
+import com.rubenzu03.rag_chatbot.domain.model.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -28,14 +28,14 @@ public class AuthController {
     }
 
     @PostMapping("/signin")
-    public String authenticateUser(@RequestBody UserDto userDto) {
-        Authentication authentication = authenticationManagerService.authenticate(userDto.email(), userDto.password());
+    public String authenticateUser(@RequestBody UserDTO userDto) {
+        Authentication authentication = authenticationManagerService.authenticate(userDto.getEmail(), userDto.getPassword());
         return jwtUtilsService.generateToken(authentication.getName());
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> registerUser(@RequestBody UserDto userDto) {
-        if (manageUserUseCase.checkUserExists(userDto.email())) {
+    public ResponseEntity<String> registerUser(@RequestBody UserDTO userDto) {
+        if (manageUserUseCase.checkUserExists(userDto.getEmail())) {
             return ResponseEntity.badRequest().body("User already exists");
         }
         manageUserUseCase.registerUser(userDto);

@@ -1,9 +1,9 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.input.rest;
 
-import com.rubenzu03.rag_chatbot.domain.dto.EvaluationRequest;
-import com.rubenzu03.rag_chatbot.domain.dto.EvaluationResponse;
+import com.rubenzu03.rag_chatbot.application.ports.input.QuestionUseCase;
+import com.rubenzu03.rag_chatbot.domain.dto.QuestionEvaluationRequest;
+import com.rubenzu03.rag_chatbot.domain.dto.QuestionEvaluationResponse;
 import com.rubenzu03.rag_chatbot.domain.dto.QuestionResponse;
-import com.rubenzu03.rag_chatbot.application.service.QuestionModeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,22 +12,23 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/question-mode")
 public class QuestionModeController {
 
-    private final QuestionModeService questionModeService;
+    private final QuestionUseCase questionUseCase;
 
     @Autowired
-    public QuestionModeController(QuestionModeService questionModeService) {
-        this.questionModeService = questionModeService;
+    public QuestionModeController(QuestionUseCase questionUseCase) {
+        this.questionUseCase = questionUseCase;
     }
 
     @PostMapping("/generate")
     public ResponseEntity<QuestionResponse> generateQuestion() {
-        QuestionResponse questionResponse = questionModeService.generateQuestion();
+        //TODO: Cambiar a questionUseCase
+        QuestionResponse questionResponse = questionUseCase.generateQuestion();
         return ResponseEntity.ok(questionResponse);
     }
 
     @PostMapping("/evaluate")
-    public ResponseEntity<EvaluationResponse> evaluateAnswer(@RequestBody EvaluationRequest request) {
-        EvaluationResponse evaluationResponse = questionModeService.evaluateAnswer(request);
-        return ResponseEntity.ok(evaluationResponse);
+    public ResponseEntity<QuestionEvaluationResponse> evaluateAnswer(@RequestBody QuestionEvaluationRequest request) {
+        QuestionEvaluationResponse questionEvaluationResponse = questionUseCase.evaluateAnswer(request);
+        return ResponseEntity.ok(questionEvaluationResponse);
     }
 }

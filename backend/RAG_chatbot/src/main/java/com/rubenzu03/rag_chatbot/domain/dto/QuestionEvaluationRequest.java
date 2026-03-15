@@ -9,7 +9,7 @@ import lombok.Getter;
 @NoArgsConstructor
 @Setter
 @Getter
-public class EvaluationRequest {
+public class QuestionEvaluationRequest {
     public String questionId;
     public String answer;
 }

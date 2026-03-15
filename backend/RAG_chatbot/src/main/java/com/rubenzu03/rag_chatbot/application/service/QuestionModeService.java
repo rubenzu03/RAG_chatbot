@@ -1,17 +1,18 @@
 package com.rubenzu03.rag_chatbot.application.service;
 
+import com.rubenzu03.rag_chatbot.application.ports.input.QuestionUseCase;
+import com.rubenzu03.rag_chatbot.application.ports.output.QuestionRepositoryPort;
 import com.rubenzu03.rag_chatbot.infrastructure.components.RAGContextBuilder;
 import com.rubenzu03.rag_chatbot.infrastructure.config.ChatClientConfig;
-import com.rubenzu03.rag_chatbot.domain.model.Question;
-import com.rubenzu03.rag_chatbot.domain.dto.EvaluationRequest;
-import com.rubenzu03.rag_chatbot.domain.dto.EvaluationResponse;
+import com.rubenzu03.rag_chatbot.domain.model.QuestionDTO;
+import com.rubenzu03.rag_chatbot.domain.dto.QuestionEvaluationRequest;
+import com.rubenzu03.rag_chatbot.domain.dto.QuestionEvaluationResponse;
 import com.rubenzu03.rag_chatbot.domain.dto.QuestionResponse;
 import com.rubenzu03.rag_chatbot.domain.exception.DocumentsNotFoundException;
 import com.rubenzu03.rag_chatbot.domain.exception.QuestionNotFoundException;
-import com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.GeneratedQuestionRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.entity.QuestionEntity;
 import org.springframework.ai.chat.client.ChatClient;
+
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -21,25 +22,46 @@ import java.util.Collections;
 import java.util.List;
 
 @Service
-public class QuestionModeService {
-
-    private static final Logger log = LoggerFactory.getLogger(QuestionModeService.class);
+public class QuestionModeService implements QuestionUseCase {
 
     private final RetrievalService retrievalService;
     private final RAGContextBuilder ragContextBuilder;
     private final ChatClient chatClient;
-    private final GeneratedQuestionRepository generatedQuestionRepository;
+    private final QuestionRepositoryPort questionRepositoryPort;
 
     public QuestionModeService(@Qualifier("QuestionModeChatClient") ChatClient chatClient,
                                RetrievalService retrievalService,
                                RAGContextBuilder ragContextBuilder,
-                               GeneratedQuestionRepository generatedQuestionRepository) {
+                               QuestionRepositoryPort generatedQuestionRepository) {
         this.retrievalService = retrievalService;
         this.ragContextBuilder = ragContextBuilder;
         this.chatClient = chatClient;
-        this.generatedQuestionRepository = generatedQuestionRepository;
+        this.questionRepositoryPort = generatedQuestionRepository;
     }
 
+
+    @Override
+    public QuestionEvaluationResponse evaluateAnswer(QuestionEvaluationRequest questionEvaluationRequest) {
+        QuestionDTO questionDTO = questionRepositoryPort
+                .findById(questionEvaluationRequest.getQuestionId())
+                .orElseThrow(() -> new QuestionNotFoundException(
+                        "Question not found: " + questionEvaluationRequest.getQuestionId()));
+
+        String prompt = String.format(
+                ChatClientConfig.EVALUATION_PROMPT,
+                questionDTO.getContext(),
+                questionDTO.getQuestion(),
+                questionEvaluationRequest.getAnswer()
+        );
+
+        String fullResponse = chatClient.prompt()
+                .user(prompt)
+                .call().content();
+
+        return parseEvaluation(fullResponse);
+    }
+
+    @Override
     public QuestionResponse generateQuestion() {
         List<Document> docs = retrievalService.retrieveDocuments(new Query("*"), 30);
 
@@ -58,35 +80,18 @@ public class QuestionModeService {
                 .user(prompt)
                 .call().content();
 
-        Question entity = new Question();
-        entity.setQuestion(question);
-        entity.setContext(context);
-        Question saved = generatedQuestionRepository.save(entity);
+
+        QuestionDTO questionEntity = new QuestionDTO();
+        questionEntity.setQuestion(question);
+        questionEntity.setContext(context);
+
+        QuestionEntity saved = questionRepositoryPort.save(questionEntity)
+                .orElseThrow(() -> new RuntimeException("Error saving generated question"));
 
         return new QuestionResponse(saved.getId(), question);
     }
 
-    public EvaluationResponse evaluateAnswer(EvaluationRequest evaluationRequest) {
-        Question question = generatedQuestionRepository
-                .findById(evaluationRequest.getQuestionId())
-                .orElseThrow(() -> new QuestionNotFoundException(
-                        "Question not found: " + evaluationRequest.getQuestionId()));
-
-        String prompt = String.format(
-                ChatClientConfig.EVALUATION_PROMPT,
-                question.getContext(),
-                question.getQuestion(),
-                evaluationRequest.getAnswer()
-        );
-
-        String fullResponse = chatClient.prompt()
-                .user(prompt)
-                .call().content();
-
-        return parseEvaluation(fullResponse);
-    }
-
-    private EvaluationResponse parseEvaluation(String fullResponse) {
+    private QuestionEvaluationResponse parseEvaluation(String fullResponse) {
         String result = "";
         String explanation = fullResponse;
 
@@ -105,10 +110,10 @@ public class QuestionModeService {
             explanation = fullResponse.substring(explanationStart + "explicación:".length()).trim();
         }
 
-        return new EvaluationResponse(result, explanation);
+        return new QuestionEvaluationResponse(result, explanation);
     }
 
     public void deleteAllQuestions() {
-        generatedQuestionRepository.deleteAll();
+        questionRepositoryPort.deleteAll();
     }
 }
