@@ -1,6 +1,6 @@
 package com.rubenzu03.rag_chatbot.auth;
 
-import com.rubenzu03.rag_chatbot.service.UserDetailsService;
+import com.rubenzu03.rag_chatbot.application.service.UserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
