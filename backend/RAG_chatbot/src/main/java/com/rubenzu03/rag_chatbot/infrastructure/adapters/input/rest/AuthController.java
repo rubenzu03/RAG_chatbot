@@ -1,12 +1,9 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.input.rest;
 
-import com.rubenzu03.rag_chatbot.application.service.AuthenticationManagerService;
-import com.rubenzu03.rag_chatbot.application.service.JwtUtilsService;
 import com.rubenzu03.rag_chatbot.application.ports.input.ManageUserUseCase;
 import com.rubenzu03.rag_chatbot.domain.model.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,20 +14,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final ManageUserUseCase manageUserUseCase;
-    private final JwtUtilsService jwtUtilsService;
-    private final AuthenticationManagerService authenticationManagerService;
 
     @Autowired
-    public AuthController(AuthenticationManagerService authManagerService, JwtUtilsService jwtUtilsService, ManageUserUseCase manageUserUseCase) {
-        this.authenticationManagerService = authManagerService;
+    public AuthController(ManageUserUseCase manageUserUseCase) {
         this.manageUserUseCase = manageUserUseCase;
-        this.jwtUtilsService = jwtUtilsService;
     }
 
     @PostMapping("/signin")
     public String authenticateUser(@RequestBody UserDTO userDto) {
-        Authentication authentication = authenticationManagerService.authenticate(userDto.getEmail(), userDto.getPassword());
-        return jwtUtilsService.generateToken(authentication.getName());
+        return manageUserUseCase.login(userDto.getEmail(), userDto.getPassword());
     }
 
     @PostMapping("/signup")
