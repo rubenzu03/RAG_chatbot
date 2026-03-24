@@ -46,7 +46,7 @@ API_URL = os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/simplequer
 DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
 TOKEN = os.environ.get("BEARER_TOKEN")
 RESULTS_CSV = resolve_path_parent(os.environ.get("TOKEN_RESULTS_CSV", "simple_token_results.csv"))
-MODEL_NAME = "gemma3n:e4b"
+MODEL_NAME = "llama3.1:latest"
 
 
 def load_records(path):
@@ -77,7 +77,7 @@ def main(limit=10):
 			start = time.perf_counter()
 			chunks = []
 			try:
-				r = requests.post(API_URL, params={"query": q}, headers=headers, timeout=500)
+				r = requests.post(API_URL, data={"query": q}, headers=headers, timeout=500)
 				if r.status_code >= 400:
 					elapsed = time.perf_counter() - start
 					print(f"http {r.status_code} for {i}")
