@@ -443,7 +443,7 @@ API_URL = os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/ragquery")
 DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
 TOKEN = os.environ.get("BEARER_TOKEN")
 RESULTS_CSV = resolve_path_parent(os.environ.get("RAG_RESULTS_CSV", "results.csv"))
-MODEL_NAME = os.environ.get("MODEL_NAME", "granite4:350m")
+MODEL_NAME = os.environ.get("MODEL_NAME", "lfm2.5-thinking:latest")
 
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
 NLI_MODEL_NAME = os.environ.get("NLI_MODEL", "facebook/bart-large-mnli")
@@ -621,9 +621,12 @@ def nli_judge(answer: str, truth: str) -> float | None:
         return None
     try:
         score_a = _nli_one(answer, truth)
+        score_b = _nli_one(truth, answer)
+
+        score = (score_a + score_b) / 2.0
         if NLI_DEVICE == "cuda" and torch and torch.cuda.is_available():
             torch.cuda.empty_cache()
-        return round(score_a, 4)
+        return round(score, 4)
     except Exception as e:
         print(f"  [nli] error: {e}")
         return None
