@@ -12,7 +12,6 @@ from sklearn.metrics.pairwise import cosine_similarity
 from bert_score import BERTScorer
 from transformers import pipeline as hf_pipeline
 
-from quality_benchmarks.rag_benchmark import NLI_AVAILABLE
 
 def load_env_parent(env_name=".env"):
     parent = Path(__file__).resolve().parent.parent
@@ -49,12 +48,12 @@ def resolve_path_parent(path_str, start_file=__file__):
 load_env_parent()
 
 
-API_URL          = os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/simplequery")
-DATASET          = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
-TOKEN            = os.environ.get("BEARER_TOKEN")
-RESULTS_CSV      = resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "simple_results.csv"))
-STREAM_RESPONSES = os.environ.get("STREAM_RESPONSES", "false").lower() in ("1", "true", "yes")
-MODEL_NAME       = os.environ.get("MODEL_NAME", "granite4:350m")
+API_URL= os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/simplequery")
+DATASET= resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
+TOKEN= "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0MTZAdGVzdC5jb20iLCJpYXQiOjE3NzQzODcwNDUsImV4cCI6MTc3NDQ3MzQ0NX0.os7IoHoABAjdG4KcQ5f90XvaVH8NnJmjAg9GuZ7tNfU"
+RESULTS_CSV= resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "simple_results.csv"))
+STREAM_RESPONSES= os.environ.get("STREAM_RESPONSES", "false").lower() in ("1", "true", "yes")
+MODEL_NAME= os.environ.get("MODEL_NAME", "llama3.2")
 
 # OPCIONES MODELO
 #   cross-encoder/nli-MiniLM2-L6-H768   ~90 MB  ← default, fast
@@ -161,18 +160,6 @@ def bert_score(answer: str, truth: str) -> float | None:
 
 
 
-# ENTAILMENT= premise logically implies the hypothesis
-# NEUTRAL= related but no strong implication
-# CONTRADICTION= premise conflicts with the hypothesis
-#
-# Direction A  premise=answer,  hypothesis=truth  correctness
-# TODO! implement direction B premise = truth, hypothesis answer =
-#
-# Label -> [0, 1] mapping:
-# ENTAILMENT    →  score          (high confidence the relation holds)
-# NEUTRAL       →  score * 0.35   (partial credit)
-# CONTRADICTION →  0.0            (factually wrong, no credit)
-
 def _nli_one(premise: str, hypothesis: str) -> float:
     def _normalize_label(raw_label: str) -> str:
         label = (raw_label or "").upper().strip()
@@ -222,9 +209,12 @@ def nli_judge(answer: str, truth: str) -> float | None:
         return None
     try:
         score_a = _nli_one(answer, truth)
+        score_b = _nli_one(truth, answer)
+
+        score = (score_a + score_b) / 2.0
         if NLI_DEVICE == "cuda" and torch and torch.cuda.is_available():
             torch.cuda.empty_cache()
-        return round(score_a, 4)
+        return round(score, 4)
     except Exception as e:
         print(f"  [nli] error: {e}")
         return None
@@ -299,7 +289,7 @@ def main(limit=None):
                         collected.append(text)
                 else:
                     resp = requests.post(
-                        API_URL, data={"query": query}, headers=req_headers, timeout=30,
+                        API_URL, data={"query": query}, headers=req_headers, timeout=400,
                     )
                     resp.raise_for_status()
                     collected = [resp.text or ""]
