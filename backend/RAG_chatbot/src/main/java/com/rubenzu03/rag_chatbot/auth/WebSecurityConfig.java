@@ -1,6 +1,6 @@
 package com.rubenzu03.rag_chatbot.auth;
 
-import com.rubenzu03.rag_chatbot.service.UserDetailsService;
+import com.rubenzu03.rag_chatbot.application.service.UserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
