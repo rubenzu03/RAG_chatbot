@@ -39,7 +39,7 @@ DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset
 TOKEN = os.environ.get("BEARER_TOKEN")
 RESULTS_CSV = resolve_path_parent(os.environ.get("TOKEN_RESULTS_CSV", "simple_token_results.csv"))
 MODEL_NAME = os.environ.get("MODEL_NAME", "granite4:350m")
-BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple-token-benchmark")
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple-tok")
 BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 

@@ -43,10 +43,10 @@ load_env_parent()
 API_URL= os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/simplequery")
 DATASET= resolve_path_parent(os.environ.get("RAG_DATASET", "common_knowledge.json"))
 TOKEN= resolve_path_parent(os.environ.get("BEARER_TOKEN"))
-RESULTS_CSV= resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "common_knowledge_results.csv"))
+RESULTS_CSV= resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "simple_results.csv"))
 STREAM_RESPONSES= resolve_path_parent(os.environ.get("STREAM_RESPONSES", "false")).lower() in ("1", "true", "yes")
 MODEL_NAME= resolve_path_parent(os.environ.get("MODEL_NAME"))
-BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple-benchmark")
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple")
 BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 # OPCIONES MODELO

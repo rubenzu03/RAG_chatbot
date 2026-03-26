@@ -43,7 +43,7 @@ DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset
 TOKEN= resolve_path_parent(os.environ.get("BEARER_TOKEN"))
 RESULTS_CSV = resolve_path_parent(os.environ.get("RAG_RESULTS_CSV", "results.csv"))
 MODEL_NAME = resolve_path_parent(os.environ.get("MODEL_NAME"))
-BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "rag-benchmark")
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "rag")
 BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
