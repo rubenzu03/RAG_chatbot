@@ -7,22 +7,14 @@ from datetime import datetime, timezone
 import requests
 
 from pathlib import Path
+from dotenv import load_dotenv
 
 def load_env_parent(env_name=".env"):
 	parent = Path(__file__).resolve().parent.parent
 	candidate = parent / env_name
 	if candidate.exists():
 		try:
-			with candidate.open(encoding="utf-8") as f:
-				for line in f:
-					line = line.strip()
-					if not line or line.startswith("#") or "=" not in line:
-						continue
-					k, v = line.split("=", 1)
-					k = k.strip()
-					v = v.strip().strip('"').strip("'")
-					if k and v:
-						os.environ.setdefault(k, v)
+			load_dotenv(dotenv_path=str(candidate), override=True)
 		except Exception:
 			pass
 
@@ -44,9 +36,9 @@ load_env_parent()
 
 API_URL = os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/ragquery")
 DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
-TOKEN = os.environ.get("BEARER_TOKEN")
+TOKEN = resolve_path_parent(os.environ.get("BEARER_TOKEN"))
 RESULTS_CSV = resolve_path_parent(os.environ.get("TOKEN_RESULTS_CSV", "token_results.csv"))
-MODEL_NAME = "phi3:latest"
+MODEL_NAME = resolve_path_parent(os.environ.get("MODEL_NAME", "granite4:350m"))
 
 
 def load_records(path):
