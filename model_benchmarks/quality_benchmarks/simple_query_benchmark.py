@@ -43,9 +43,11 @@ load_env_parent()
 API_URL= os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/simplequery")
 DATASET= resolve_path_parent(os.environ.get("RAG_DATASET", "common_knowledge.json"))
 TOKEN= resolve_path_parent(os.environ.get("BEARER_TOKEN"))
-RESULTS_CSV= resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "programming_simple_results.csv"))
+RESULTS_CSV= resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "common_knowledge_results.csv"))
 STREAM_RESPONSES= resolve_path_parent(os.environ.get("STREAM_RESPONSES", "false")).lower() in ("1", "true", "yes")
 MODEL_NAME= resolve_path_parent(os.environ.get("MODEL_NAME"))
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple-benchmark")
+BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 # OPCIONES MODELO
 #   cross-encoder/nli-MiniLM2-L6-H768   ~90 MB  ← default, fast
@@ -304,10 +306,11 @@ def main(limit=None):
 
             print(f"\n-- record {index}/{len(records)} --")
             collected = []
+            conversation_id = f"{BENCH_CONVERSATION_PREFIX}-{index}" if BENCH_ISOLATE_CONVERSATIONS else BENCH_CONVERSATION_PREFIX
             try:
                 if STREAM_RESPONSES:
                     resp = requests.post(
-                        API_URL, data={"query": query}, headers=req_headers,
+                        API_URL, data={"query": query, "conversationId": conversation_id}, headers=req_headers,
                         timeout=(5, None), stream=True,
                     )
                     resp.raise_for_status()
@@ -320,7 +323,7 @@ def main(limit=None):
                             collected.append(chunk)
                 else:
                     resp = requests.post(
-                        API_URL, data={"query": query}, headers=req_headers, timeout=400,
+                        API_URL, data={"query": query, "conversationId": conversation_id}, headers=req_headers, timeout=400,
                     )
                     resp.raise_for_status()
                     chunk = extract_response_text(resp.text or "")

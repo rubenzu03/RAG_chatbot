@@ -26,21 +26,25 @@ public class AnswerModeController {
 
     @PostMapping("/api/ai/simplequery")
     public ResponseEntity<ChatResponse> askQuery(
-            @RequestParam(name = "query") String query){
+            @RequestParam(name = "query") String query,
+            @RequestParam(name = "conversationId", required = false) String conversationId){
 
         String userId = getAuthenticatedUserEmail();
-        String response = answerModeService.answerSimpleQuery(query, userId);
+        String conversationKey = answerModeService.buildConversationKey(userId, conversationId);
+        String response = answerModeService.answerSimpleQuery(query, conversationKey);
 
-        return ResponseEntity.ok(new ChatResponse(response, userId));
+        return ResponseEntity.ok(new ChatResponse(response, conversationKey));
     }
 
     @PostMapping(value = "/api/ai/ragquery", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> askQueryUsingRAG(
-            @RequestParam(name = "query") String query) {
+            @RequestParam(name = "query") String query,
+            @RequestParam(name = "conversationId", required = false) String conversationId) {
 
         String userId = getAuthenticatedUserEmail();
+        String conversationKey = answerModeService.buildConversationKey(userId, conversationId);
 
-        return answerModeService.AnswerWithRagQuery(query, userId);
+        return answerModeService.AnswerWithRagQuery(query, conversationKey);
     }
 
 }

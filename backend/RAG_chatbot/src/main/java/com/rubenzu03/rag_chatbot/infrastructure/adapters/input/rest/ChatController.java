@@ -11,6 +11,8 @@ import java.util.List;
 @RestController
 public class ChatController {
 
+    private static final String DEFAULT_CONVERSATION_ID = "default";
+
     private final ChatUseCase chatUseCase;
 
     public ChatController(ChatUseCase chatUseCase) {
@@ -24,14 +26,26 @@ public class ChatController {
 
 
     @GetMapping("/api/ai/chat/history")
-    public List<ChatResponse> getChatHistory(){
+    public List<ChatResponse> getChatHistory(
+            @RequestParam(name = "conversationId", required = false) String conversationId){
         String userId = getAuthenticatedUserEmail();
-        return chatUseCase.getHistory(userId);
+        String conversationKey = buildConversationKey(userId, conversationId);
+        return chatUseCase.getHistory(conversationKey);
     }
 
     @DeleteMapping("/api/ai/chat/history")
-    public void deleteChatHistory(){
+    public void deleteChatHistory(
+            @RequestParam(name = "conversationId", required = false) String conversationId){
         String userId = getAuthenticatedUserEmail();
-        chatUseCase.deleteHistory(userId);
+        String conversationKey = buildConversationKey(userId, conversationId);
+        chatUseCase.deleteHistory(conversationKey);
+    }
+
+    private String buildConversationKey(String userId, String conversationId) {
+        String safeUserId = (userId == null || userId.isBlank()) ? "anonymous" : userId.trim();
+        String safeConversationId = (conversationId == null || conversationId.isBlank())
+                ? DEFAULT_CONVERSATION_ID
+                : conversationId.trim();
+        return safeUserId + "::" + safeConversationId;
     }
 }

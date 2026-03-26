@@ -43,6 +43,8 @@ DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset
 TOKEN= resolve_path_parent(os.environ.get("BEARER_TOKEN"))
 RESULTS_CSV = resolve_path_parent(os.environ.get("RAG_RESULTS_CSV", "results.csv"))
 MODEL_NAME = resolve_path_parent(os.environ.get("MODEL_NAME"))
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "rag-benchmark")
+BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 EMBEDDING_MODEL_NAME = os.environ.get("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
 NLI_MODEL_NAME = os.environ.get("NLI_MODEL", "facebook/bart-large-mnli")
@@ -297,10 +299,11 @@ def main(limit=None):
 
             print(f"\n-- record {index}/{len(records)} --")
             collected = []
+            conversation_id = f"{BENCH_CONVERSATION_PREFIX}-{index}" if BENCH_ISOLATE_CONVERSATIONS else BENCH_CONVERSATION_PREFIX
             try:
                 resp = requests.post(
                     API_URL,
-                    params={"query": query},
+                    params={"query": query, "conversationId": conversation_id},
                     headers=req_headers,
                     timeout=(5, None),
                     stream=True,

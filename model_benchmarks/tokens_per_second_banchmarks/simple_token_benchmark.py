@@ -39,6 +39,8 @@ DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset
 TOKEN = os.environ.get("BEARER_TOKEN")
 RESULTS_CSV = resolve_path_parent(os.environ.get("TOKEN_RESULTS_CSV", "simple_token_results.csv"))
 MODEL_NAME = os.environ.get("MODEL_NAME", "granite4:350m")
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple-token-benchmark")
+BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 
 def load_records(path):
@@ -65,11 +67,12 @@ def main(limit=10):
 		stats = []
 		for i, rec in enumerate(records[:limit], start=1):
 			q = rec.get("query", "")
+			conversation_id = f"{BENCH_CONVERSATION_PREFIX}-{i}" if BENCH_ISOLATE_CONVERSATIONS else BENCH_CONVERSATION_PREFIX
 			print(f"start {i}/{min(limit, len(records))}")
 			start = time.perf_counter()
 			chunks = []
 			try:
-				r = requests.post(API_URL, data={"query": q}, headers=headers, timeout=500)
+				r = requests.post(API_URL, data={"query": q, "conversationId": conversation_id}, headers=headers, timeout=500)
 				resp_text = r.text or ""
 				chunks = [resp_text]
 			except Exception as e:
