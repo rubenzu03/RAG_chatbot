@@ -11,6 +11,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 from bert_score import BERTScorer
 from transformers import pipeline as hf_pipeline
+from dotenv import load_dotenv
 
 
 def load_env_parent(env_name=".env"):
@@ -18,16 +19,7 @@ def load_env_parent(env_name=".env"):
     candidate = parent / env_name
     if candidate.exists():
         try:
-            with candidate.open(encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, v = line.split("=", 1)
-                    k = k.strip()
-                    v = v.strip().strip('"').strip("'")
-                    if k and v:
-                        os.environ.setdefault(k, v)
+            load_dotenv(dotenv_path=str(candidate), override=True)
         except Exception:
             pass
 
@@ -49,11 +41,13 @@ load_env_parent()
 
 
 API_URL= os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/simplequery")
-DATASET= resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
-TOKEN= "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0MTZAdGVzdC5jb20iLCJpYXQiOjE3NzQzODcwNDUsImV4cCI6MTc3NDQ3MzQ0NX0.os7IoHoABAjdG4KcQ5f90XvaVH8NnJmjAg9GuZ7tNfU"
+DATASET= resolve_path_parent(os.environ.get("RAG_DATASET", "common_knowledge.json"))
+TOKEN= resolve_path_parent(os.environ.get("BEARER_TOKEN"))
 RESULTS_CSV= resolve_path_parent(os.environ.get("SIMPLE_RESULTS_CSV", "simple_results.csv"))
-STREAM_RESPONSES= os.environ.get("STREAM_RESPONSES", "false").lower() in ("1", "true", "yes")
-MODEL_NAME= os.environ.get("MODEL_NAME", "llama3.2")
+STREAM_RESPONSES= resolve_path_parent(os.environ.get("STREAM_RESPONSES", "false")).lower() in ("1", "true", "yes")
+MODEL_NAME= resolve_path_parent(os.environ.get("MODEL_NAME"))
+BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "simple")
+BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
 
 # OPCIONES MODELO
 #   cross-encoder/nli-MiniLM2-L6-H768   ~90 MB  ← default, fast
@@ -137,6 +131,43 @@ def sanitize_text(text):
     text = re.sub(r"(?m)^\s*data:\s*", "", text)
     text = ''.join(ch for ch in text if ch.isprintable() or ch in '\n\t')
     return re.sub(r"\s+", " ", text).strip()
+
+
+def extract_response_text(payload: str) -> str:
+    if not payload:
+        return ""
+
+    cleaned = sanitize_text(payload)
+    if not cleaned:
+        return ""
+
+    try:
+        obj = json.loads(cleaned)
+    except Exception:
+        return cleaned
+
+    if isinstance(obj, str):
+        return sanitize_text(obj)
+
+    if isinstance(obj, dict):
+        for key in ("response", "answer", "result", "text", "content", "message"):
+            value = obj.get(key)
+            if isinstance(value, str):
+                return sanitize_text(value)
+            if isinstance(value, dict) and isinstance(value.get("content"), str):
+                return sanitize_text(value["content"])
+
+        choices = obj.get("choices")
+        if isinstance(choices, list) and choices:
+            first = choices[0]
+            if isinstance(first, dict):
+                if isinstance(first.get("text"), str):
+                    return sanitize_text(first["text"])
+                message = first.get("message")
+                if isinstance(message, dict) and isinstance(message.get("content"), str):
+                    return sanitize_text(message["content"])
+
+    return cleaned
 
 
 def embedding_similarity(answer: str, truth: str) -> float:
@@ -275,10 +306,11 @@ def main(limit=None):
 
             print(f"\n-- record {index}/{len(records)} --")
             collected = []
+            conversation_id = f"{BENCH_CONVERSATION_PREFIX}-{index}" if BENCH_ISOLATE_CONVERSATIONS else BENCH_CONVERSATION_PREFIX
             try:
                 if STREAM_RESPONSES:
                     resp = requests.post(
-                        API_URL, data={"query": query}, headers=req_headers,
+                        API_URL, data={"query": query, "conversationId": conversation_id}, headers=req_headers,
                         timeout=(5, None), stream=True,
                     )
                     resp.raise_for_status()
@@ -286,13 +318,16 @@ def main(limit=None):
                         if not line:
                             continue
                         text = line[len("data:"):].lstrip() if line.startswith("data:") else line
-                        collected.append(text)
+                        chunk = extract_response_text(text)
+                        if chunk:
+                            collected.append(chunk)
                 else:
                     resp = requests.post(
-                        API_URL, data={"query": query}, headers=req_headers, timeout=400,
+                        API_URL, data={"query": query, "conversationId": conversation_id}, headers=req_headers, timeout=400,
                     )
                     resp.raise_for_status()
-                    collected = [resp.text or ""]
+                    chunk = extract_response_text(resp.text or "")
+                    collected = [chunk] if chunk else []
 
             except KeyboardInterrupt:
                 print("interrupted")
@@ -309,7 +344,8 @@ def main(limit=None):
                 })
                 continue
 
-            response_text = sanitize_text(" ".join(collected))
+            combined = sanitize_text(" ".join(collected))
+            response_text = extract_response_text(combined)
 
             if truth:
                 s_embed = round(embedding_similarity(response_text, truth), 4)

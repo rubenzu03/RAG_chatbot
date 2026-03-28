@@ -27,5 +27,9 @@ public class ChatHistoryService {
         chatMemory.add(userId, message);
     }
 
+    public void clearChatHistory(String userId) {
+        chatMemory.clear(userId);
+    }
+
 
 }
