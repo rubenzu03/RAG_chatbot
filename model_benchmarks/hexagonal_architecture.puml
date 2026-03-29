@@ -1,0 +1,140 @@
+@startuml RAG_chatbot_Hexagonal_Architecture
+left to right direction
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+
+skinparam component {
+  BackgroundColor #F8F9FA
+  BorderColor #495057
+}
+skinparam package {
+  BorderColor #6C757D
+  FontStyle bold
+}
+skinparam actor {
+  BackgroundColor #D0E8FF
+  BorderColor #1C6EA4
+}
+skinparam database {
+  BackgroundColor #FFF3CD
+  BorderColor #856404
+}
+skinparam cloud {
+  BackgroundColor #D4EDDA
+  BorderColor #155724
+}
+skinparam interface {
+  BackgroundColor #E2D9F3
+  BorderColor #6610F2
+}
+
+actor "Frontend React" as FE
+actor "Python Benchmarks" as PY_BENCHMARKS
+cloud "Ollama" as OLLAMA
+database "PostgreSQL" as PG
+cloud "MinIO" as MINIO
+database "Milvus\nVector DB" as MILVUS
+
+rectangle "RAG_chatbot Backend (Hexagonal Architecture)" {
+
+  package "Domain" {
+    [UserDTO]
+    [QuestionDTO]
+    [ChatResponse]
+    [QuestionResponse]
+    [QuestionEvaluationRequest]
+    [QuestionEvaluationResponse]
+    [DocumentsNotFoundException]
+    [QuestionNotFoundException]
+  }
+
+  package "Application Core" {
+    package "Input Ports" {
+      interface ManageUserUseCase
+      interface ChatUseCase
+      interface QuestionUseCase
+    }
+
+    package "Use Cases / Services" {
+      [UserService]
+      [ChatMemoryService]
+      [QuestionModeService]
+      [AnswerModeService]
+      [RetrievalService]
+      [TransformQueryService]
+      [IngestionService]
+    }
+
+    package "Output Ports" {
+      interface UserRepositoryPort
+      interface QuestionRepositoryPort
+      interface ChatMemoryPort
+    }
+
+    ManageUserUseCase <|.. UserService
+    ChatUseCase <|.. ChatMemoryService
+    QuestionUseCase <|.. QuestionModeService
+
+    UserService --> UserRepositoryPort
+    ChatMemoryService --> ChatMemoryPort
+    QuestionModeService --> QuestionRepositoryPort
+    QuestionModeService --> RetrievalService
+    AnswerModeService --> RetrievalService
+    AnswerModeService --> TransformQueryService
+  }
+
+  package "Infrastructure - Input Adapters" {
+    [AuthController]
+    [ChatController]
+    [QuestionModeController]
+    [AnswerModeController]
+    [DocumentController]
+  }
+
+  package "Infrastructure - Output Adapters" {
+    [UserPersistenceAdapter]
+    [QuestionPersistenceAdapter]
+    [ChatMemoryPersistenceAdapter]
+    [MinIODocumentReader]
+    [DocumentSearchModule]
+    [QueryTransformerModule]
+
+    UserRepositoryPort <|.. UserPersistenceAdapter
+    QuestionRepositoryPort <|.. QuestionPersistenceAdapter
+    ChatMemoryPort <|.. ChatMemoryPersistenceAdapter
+
+    IngestionService --> MinIODocumentReader
+    RetrievalService --> DocumentSearchModule
+    TransformQueryService --> QueryTransformerModule
+  }
+}
+
+FE --> AuthController
+FE --> ChatController
+FE --> QuestionModeController
+FE --> AnswerModeController
+FE --> DocumentController
+
+PY_BENCHMARKS --> AnswerModeController
+
+AuthController --> ManageUserUseCase
+ChatController --> ChatUseCase
+QuestionModeController --> QuestionUseCase
+AnswerModeController --> AnswerModeService
+DocumentController --> RetrievalService
+
+UserPersistenceAdapter --> PG
+QuestionPersistenceAdapter --> PG
+ChatMemoryPersistenceAdapter --> PG
+
+MinIODocumentReader --> MINIO
+DocumentSearchModule --> MILVUS
+
+QuestionModeService --> OLLAMA
+AnswerModeService --> OLLAMA
+QueryTransformerModule --> OLLAMA
+
+@enduml
+
