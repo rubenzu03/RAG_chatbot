@@ -24,18 +24,20 @@ public class QueryTransformerModule {
     private final QueryTransformer queryTransformer;
 
     private static final PromptTemplate COMPRESSION_PROMPT = new PromptTemplate("""
-            Given the conversation history and the user's current query, rephrase the query so that it is self-contained and clear, including any relevant context from the history.
-            Focus on topics of programming, software engineering and software architecture. If the query refers to something mentioned earlier, include it explicitly.
-            Conversation History: {history}
+            Dado el historial de conversación y la consulta actual del usuario, reformula la consulta
+            para que sea autocontenida y clara, incluyendo cualquier contexto relevante del historial.
             
-            Current Query: {query}
-            Rephrased Query:"
-    Polished (natural) English version (placeholders preserved): "Using the conversation history and the user's current query, rewrite the query so it is self-contained and clear, incorporating any relevant context from the history.
-    Focus on programming, software engineering, and software architecture. If the query refers to something mentioned earlier, make that reference explicit.
-    Conversation history: {history}
-    Current user query: {query}
-    Rewritten query:
-    """);
+            Enfócate en temas de programación, ingeniería del software y arquitectura del software.
+            Si la consulta hace referencia a algo mencionado anteriormente, inclúyelo explícitamente.
+            
+            Historial de Conversación:
+            {history}
+            
+            Consulta Actual:
+            {query}
+            
+            Consulta Reformulada:
+            """);
 
     @Autowired
     public QueryTransformerModule(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory) {
