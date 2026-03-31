@@ -19,12 +19,6 @@ public class DocumentSearchModule {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentSearchModule.class);
 
-    @Value("${rag.search.default-top-k:15}")
-    private int defaultTopK;
-
-    @Value("${rag.search.default-similarity-threshold:0.5}")
-    private double defaultSimilarityThreshold;
-
     private final VectorStore vectorStore;
 
     @Autowired
