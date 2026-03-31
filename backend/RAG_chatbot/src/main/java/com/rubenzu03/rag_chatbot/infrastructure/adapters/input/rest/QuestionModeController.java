@@ -21,7 +21,6 @@ public class QuestionModeController {
 
     @PostMapping("/generate")
     public ResponseEntity<QuestionResponse> generateQuestion() {
-        //TODO: Cambiar a questionUseCase
         QuestionResponse questionResponse = questionUseCase.generateQuestion();
         return ResponseEntity.ok(questionResponse);
     }
