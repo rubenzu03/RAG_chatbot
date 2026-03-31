@@ -24,19 +24,19 @@ public class QueryTransformerModule {
     private final QueryTransformer queryTransformer;
 
     private static final PromptTemplate COMPRESSION_PROMPT = new PromptTemplate("""
-            Dado el historial de conversación y la consulta actual del usuario, reformula la consulta
-            para que sea autocontenida y clara, incluyendo cualquier contexto relevante del historial.
+            Given the conversation history and the user's current query, reformulate the query
+            so that it is self-contained and clear, including any relevant context from the history.
             
-            Enfócate en temas de programación, ingeniería del software y arquitectura del software.
-            Si la consulta hace referencia a algo mencionado anteriormente, inclúyelo explícitamente.
+            Focus on the most relevant information and avoid repeating what has already been said.
+            If the query refers to something mentioned earlier, include it explicitly.
             
-            Historial de Conversación:
+            Conversation History:
             {history}
             
-            Consulta Actual:
+            Current Query:
             {query}
             
-            Consulta Reformulada:
+            Rewritten Query:
             """);
 
     @Autowired
