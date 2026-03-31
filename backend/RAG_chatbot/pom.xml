@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.rubenzu03</groupId>
     <artifactId>RAG_chatbot</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <name>RAG_chatbot</name>
     <description>RAG_chatbot</description>
     <url/>
@@ -28,7 +28,7 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <spring-ai.version>1.1.3</spring-ai.version>
+        <spring-ai.version>1.1.4</spring-ai.version>
         <grpc.version>1.78.0</grpc.version>
         <protobuf.version>4.33.2</protobuf.version>
         <lang3.version>3.20.0</lang3.version>
