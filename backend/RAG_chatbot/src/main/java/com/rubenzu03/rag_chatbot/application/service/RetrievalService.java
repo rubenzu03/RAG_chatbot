@@ -5,6 +5,8 @@ import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.preretrieve.QueryExpa
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.preretrieve.TranslationQueryModule;
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.retrieve.DocumentJoinModule;
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.retrieve.DocumentSearchModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,7 @@ import java.util.Map;
 
 @Service
 public class RetrievalService {
+    private static Logger log = LoggerFactory.getLogger(RetrievalService.class);
 
     private final TranslationQueryModule translationQueryModule;
     private final QueryExpansionModule queryExpansionModule;
@@ -44,7 +47,8 @@ public class RetrievalService {
 
         Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
         for (Query expandedQuery : expandedQueries) {
-            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.3);
+            log.debug("Retrieving documents for query: {}", expandedQuery.text());
+            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.8);
             queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
         }
 
