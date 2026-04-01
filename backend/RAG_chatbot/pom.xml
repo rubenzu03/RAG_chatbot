@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.rubenzu03</groupId>
     <artifactId>RAG_chatbot</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <name>RAG_chatbot</name>
     <description>RAG_chatbot</description>
     <url/>
@@ -118,11 +118,6 @@
         <dependency>
             <groupId>com.squareup.okio</groupId>
             <artifactId>okio</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.github.cdimascio</groupId>
-            <artifactId>java-dotenv</artifactId>
-            <version>3.2.0</version>
         </dependency>
         <dependency>
             <groupId>io.minio</groupId>
