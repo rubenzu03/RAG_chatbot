@@ -48,7 +48,7 @@ public class RetrievalService {
         Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
         for (Query expandedQuery : expandedQueries) {
             log.debug("Retrieving documents for query: {}", expandedQuery.text());
-            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.8);
+            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.4);
             queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
         }
 
