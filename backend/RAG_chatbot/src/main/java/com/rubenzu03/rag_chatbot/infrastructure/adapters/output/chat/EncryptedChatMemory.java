@@ -58,8 +58,6 @@ public class EncryptedChatMemory implements ChatMemory {
                 return new AssistantMessage(newContent);
             case SYSTEM:
                 return new SystemMessage(newContent);
-            case TOOL:
-                 return original;
             default:
                 return original;
         }

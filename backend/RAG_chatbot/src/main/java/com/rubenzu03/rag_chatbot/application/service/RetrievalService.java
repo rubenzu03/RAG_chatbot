@@ -2,11 +2,11 @@ package com.rubenzu03.rag_chatbot.application.service;
 
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.postretrieve.DocumentPostProcessingModule;
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.preretrieve.QueryExpansionModule;
-import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.preretrieve.QueryTransformerModule;
-import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.preretrieve.RewriteQueryModule;
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.preretrieve.TranslationQueryModule;
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.retrieve.DocumentJoinModule;
 import com.rubenzu03.rag_chatbot.infrastructure.ragmodules.retrieve.DocumentSearchModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.stereotype.Service;
@@ -18,18 +18,15 @@ import java.util.Map;
 
 @Service
 public class RetrievalService {
+    private static Logger log = LoggerFactory.getLogger(RetrievalService.class);
 
-    private final QueryTransformerModule queryTransformerModule;
-    private final RewriteQueryModule rewriteQueryModule;
     private final TranslationQueryModule translationQueryModule;
     private final QueryExpansionModule queryExpansionModule;
     private final DocumentSearchModule documentSearchModule;
     private final DocumentJoinModule documentJoinModule;
     private final DocumentPostProcessingModule documentPostProcessingModule;
 
-    public RetrievalService(QueryTransformerModule queryTransformerModule, RewriteQueryModule rewriteQueryModule, TranslationQueryModule translationQueryModule, QueryExpansionModule queryExpansionModule, DocumentSearchModule documentSearchModule, DocumentJoinModule documentJoinModule, DocumentPostProcessingModule documentPostProcessingModule) {
-        this.queryTransformerModule = queryTransformerModule;
-        this.rewriteQueryModule = rewriteQueryModule;
+    public RetrievalService(TranslationQueryModule translationQueryModule, QueryExpansionModule queryExpansionModule, DocumentSearchModule documentSearchModule, DocumentJoinModule documentJoinModule, DocumentPostProcessingModule documentPostProcessingModule) {
         this.translationQueryModule = translationQueryModule;
         this.queryExpansionModule = queryExpansionModule;
         this.documentSearchModule = documentSearchModule;
@@ -39,7 +36,6 @@ public class RetrievalService {
 
 
     public List<Document> retrieveDocuments(Query finalQuery, int topK) {
-        finalQuery = rewriteQueryModule.rewriteUserQuery(finalQuery.text());
         finalQuery = translationQueryModule.translateQuery(finalQuery.text());
 
         List<Query> expandedQueries = queryExpansionModule.expandQueries(finalQuery);
@@ -51,7 +47,8 @@ public class RetrievalService {
 
         Map<Query, List<List<Document>>> queryToDocuments = new HashMap<>();
         for (Query expandedQuery : expandedQueries) {
-            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.3);
+            log.debug("Retrieving documents for query: {}", expandedQuery.text());
+            List<Document> retrievedDocs = documentSearchModule.retrieveDocuments(expandedQuery, 20, 0.4);
             queryToDocuments.put(expandedQuery, List.of(retrievedDocs));
         }
 

@@ -16,7 +16,9 @@ public class UserService implements ManageUserUseCase {
     private final AuthenticationManagerService authenticationManagerService;
     private final JwtUtilsService jwtUtilsService;
 
-    public UserService(UserRepositoryPort userRepositoryPort, PasswordEncoder passwordEncoder, AuthenticationManagerService authenticationManagerService, JwtUtilsService jwtUtilsService) {
+    public UserService(UserRepositoryPort userRepositoryPort, PasswordEncoder passwordEncoder,
+                       AuthenticationManagerService authenticationManagerService,
+                       JwtUtilsService jwtUtilsService) {
         this.userRepositoryPort = userRepositoryPort;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManagerService = authenticationManagerService;

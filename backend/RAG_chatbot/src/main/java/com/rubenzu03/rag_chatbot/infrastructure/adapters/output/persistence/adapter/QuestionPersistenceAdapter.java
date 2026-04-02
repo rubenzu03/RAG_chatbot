@@ -28,7 +28,7 @@ public class QuestionPersistenceAdapter implements QuestionRepositoryPort {
 
     @Override
     public Optional<QuestionDTO> findById(String id) {
-        return Optional.ofNullable(generatedQuestionRepository.findById(id)
+        return Optional.of(generatedQuestionRepository.findById(id)
                 .map(questionMapper::toDomain)
                 .orElseThrow(() -> new RuntimeException("Question not found with id: " + id)));
     }

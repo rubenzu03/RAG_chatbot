@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MinioConfig {
+public class MinIOConfig {
 
     @Value("${MINIO.ENDPOINT:${MINIO_ENDPOINT:}}")
     private String endpoint;
