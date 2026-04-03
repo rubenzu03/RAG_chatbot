@@ -1,11 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  streamRagQuery,
-  clearChatHistory,
-  logout,
-  type ChatMessage,
-} from './api';
+import { streamRagQuery, type ChatMessage } from './api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -52,7 +47,6 @@ function CopyButton({ code }: { code: string }) {
   );
 }
 
-// Overrides markdown for proper code block render
 const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components'] = {
   code({ className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || '');
@@ -122,11 +116,6 @@ export default function ChatbotMain() {
   const autoScrollRef = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/auth', { replace: true });
-  };
 
   useEffect(() => {
     document.title = 'Chatbot';
@@ -220,12 +209,6 @@ export default function ChatbotMain() {
     }
   };
 
-  const handleDataDeletion = async () => {
-    await clearChatHistory();
-    setMessages([]);
-    inputRef.current?.focus();
-  };
-
   return (
     <div className="flex flex-col h-screen">
       <div className="flex items-center justify-start px-6 py-4 border-b border-gray-700 bg-gray-800">
@@ -237,42 +220,42 @@ export default function ChatbotMain() {
           <button
             onClick={() => setMode('chat')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1.5 ${
-              mode === 'chat'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-gray-200'
+              mode === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
             </svg>
             Chat
           </button>
           <button
             onClick={() => setMode('questions')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1.5 ${
-              mode === 'questions'
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-400 hover:text-gray-200'
+              mode === 'questions' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+              />
             </svg>
             Questions
           </button>
         </div>
 
         <button
-          className="text-white bg-red-500 px-4 py-2 rounded-lg ml-auto hover:bg-red-800"
-          onClick={handleDataDeletion}
+          className="text-white bg-gray-600 px-4 py-2 rounded-lg ml-auto hover:bg-gray-700"
+          onClick={() => navigate('/profile')}
         >
-          Delete Data
-        </button>
-        <button
-          className="text-white bg-gray-600 px-4 py-2 rounded-lg ml-2 hover:bg-gray-700"
-          onClick={handleLogout}
-        >
-          Logout
+          Profile
         </button>
       </div>
       {mode === 'questions' ? (
@@ -280,121 +263,124 @@ export default function ChatbotMain() {
           <QuestionMode />
         </div>
       ) : (
-      <>
-      <div
-        ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark"
-      >
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <h2 className="text-xl font-semibold text-gray-300 mb-2">Welcome to RAG Chatbot</h2>
-            <p className="text-center max-w-md">
-              Start a conversation by typing a message below. I can help answer questions based on
-              your knowledge base.
-            </p>
-          </div>
-        ) : (
-          // Messages List
-          <>
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                } animate-fade-in`}
-              >
-                <div
-                  className={`max-w-[65%] rounded-2xl px-4 py-3 ${
-                    message.role === 'user'
-                      ? 'bg-message-user-dark text-white'
-                      : 'bg-message-bot-dark text-gray-100'
-                  }`}
-                >
-                  {/* <div className="flex items-center gap-2 mb-1">
+        <>
+          <div
+            ref={messagesContainerRef}
+            className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark"
+          >
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <h2 className="text-xl font-semibold text-gray-300 mb-2">Welcome to RAG Chatbot</h2>
+                <p className="text-center max-w-md">
+                  Start a conversation by typing a message below. I can help answer questions based
+                  on your knowledge base.
+                </p>
+              </div>
+            ) : (
+              // Messages List
+              <>
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${
+                      message.role === 'user' ? 'justify-end' : 'justify-start'
+                    } animate-fade-in`}
+                  >
+                    <div
+                      className={`max-w-[65%] rounded-2xl px-4 py-3 ${
+                        message.role === 'user'
+                          ? 'bg-message-user-dark text-white'
+                          : 'bg-message-bot-dark text-gray-100'
+                      }`}
+                    >
+                      {/* <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-semibold opacity-80">
                       {message.role === 'user' ? 'You' : 'Assistant'}
                     </span>
                   </div> */}
 
-                  <div className="markdown-content wrap-break-words">
-                    {message.content ? (
-                      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                        {normalizeMarkdown(message.content)}
-                      </ReactMarkdown>
-                    ) : (
-                      <span className="inline-flex gap-1">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                      </span>
-                    )}
-                  </div>
+                      <div className="markdown-content wrap-break-words">
+                        {message.content ? (
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
+                          >
+                            {normalizeMarkdown(message.content)}
+                          </ReactMarkdown>
+                        ) : (
+                          <span className="inline-flex gap-1">
+                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                          </span>
+                        )}
+                      </div>
 
-                  <div className="text-xs opacity-60 mt-1">
-                    {new Date().toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                      <div className="text-xs opacity-60 mt-1">
+                        {new Date().toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </>
-        )}
-      </div>
-
-      {/* Input Area */}
-      <div className="bg-primary-dark px-5 py-4">
-        <div className="relative max-w-4xl mx-auto flex items-center">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-            disabled={isLoading}
-            rows={2}
-            className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
-            style={{
-              scrollbarWidth: 'thin',
-            }}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            className="absolute right-3 p-2 bg-message-user-dark hover:bg-blue-600 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
-          >
-            {isLoading ? (
-              <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-            ) : (
-              <img src="/src/assets/send-ins-line.svg" alt="Send" className="w-5 h-5" />
+                ))}
+                <div ref={messagesEndRef} />
+              </>
             )}
-          </button>
-        </div>
-      </div>
-      {/* AI Content warning */}
-      <div className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200">
-        <p>
-          Content generated by AI may not be accurate or reliable. Please verify information from
-          trusted sources.
-        </p>
-      </div>
-      </>
+          </div>
+
+          {/* Input Area */}
+          <div className="bg-primary-dark px-5 py-4">
+            <div className="relative max-w-4xl mx-auto flex items-center">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+                disabled={isLoading}
+                rows={2}
+                className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
+                style={{
+                  scrollbarWidth: 'thin',
+                }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading}
+                className="absolute right-3 p-2 bg-message-user-dark hover:bg-blue-600 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
+              >
+                {isLoading ? (
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                ) : (
+                  <img src="/src/assets/send-ins-line.svg" alt="Send" className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </div>
+          {/* AI Content warning */}
+          <div className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200">
+            <p>
+              Content generated by AI may not be accurate or reliable. Please verify information
+              from trusted sources.
+            </p>
+          </div>
+        </>
       )}
     </div>
   );

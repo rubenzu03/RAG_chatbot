@@ -27,6 +27,38 @@ export function isAuthenticated(): boolean {
   return !!getToken();
 }
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    const decoded = atob(padded);
+    return JSON.parse(decoded) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export function getCurrentUserEmail(): string | null {
+  const token = getToken();
+  if (!token) return null;
+
+  const payload = decodeJwtPayload(token);
+  if (!payload) return null;
+
+  const candidates = [payload.email, payload.preferred_username, payload.username, payload.sub];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 function authHeaders(): Record<string, string> {
   const token = getToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -34,7 +66,15 @@ function authHeaders(): Record<string, string> {
 
 export async function login(email: string, password: string): Promise<string> {
   const response = await api.post('/auth/signin', { email, password });
-  const token = response.data;
+  const token =
+    typeof response.data === 'string'
+      ? response.data
+      : (response.data?.token as string | undefined);
+
+  if (!token) {
+    throw new Error('Login response did not include a token');
+  }
+
   setToken(token);
   return token;
 }
@@ -46,6 +86,35 @@ export async function register(email: string, password: string): Promise<string>
 
 export function logout(): void {
   removeToken();
+}
+
+async function tryDeleteAccount(endpoint: string): Promise<boolean> {
+  try {
+    await api.delete(endpoint, { headers: authHeaders() });
+    return true;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      if (status === 404 || status === 405) {
+        return false;
+      }
+    }
+    throw error;
+  }
+}
+
+export async function deleteAccount(): Promise<void> {
+  const candidateEndpoints = ['/auth/account', '/auth/delete', '/auth/me'];
+
+  for (const endpoint of candidateEndpoints) {
+    const deleted = await tryDeleteAccount(endpoint);
+    if (deleted) {
+      removeToken();
+      return;
+    }
+  }
+
+  throw new Error('No delete-account endpoint was found in the API.');
 }
 
 export async function clearChatHistory(): Promise<boolean> {
@@ -202,7 +271,6 @@ export async function streamRagQuery(
           if (dataLines.length > 0) {
             const data = dataLines.join('\n');
             dataLines = [];
-
 
             if (data !== '[DONE]') onToken(data);
           }

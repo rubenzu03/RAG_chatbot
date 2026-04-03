@@ -62,9 +62,9 @@ export default function QuestionMode() {
       // Update score
       const r = res.result.toUpperCase();
       setScore((prev) => ({
-        correct: prev.correct + (r === 'CORRECTA' ? 1 : 0),
-        partial: prev.partial + (r === 'PARCIAL' ? 1 : 0),
-        incorrect: prev.incorrect + (r === 'INCORRECTA' ? 1 : 0),
+        correct: prev.correct + (r === 'CORRECT' ? 1 : 0),
+        partial: prev.partial + (r === 'PARTIAL' ? 1 : 0),
+        incorrect: prev.incorrect + (r === 'INCORRECT' ? 1 : 0),
       }));
 
       setHistory((prev) => [

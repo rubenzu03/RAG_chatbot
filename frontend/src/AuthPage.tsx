@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { login, register } from './api';
+import { isAuthenticated, login, register } from './api';
 
 type AuthMode = 'login' | 'register';
 
@@ -13,6 +13,12 @@ export default function AuthPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/chat', { replace: true });
+    }
+  }, [navigate]);
 
   const handleAction = async () => {
     setError('');
