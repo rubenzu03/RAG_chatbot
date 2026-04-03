@@ -1,0 +1,173 @@
+@startuml
+title RAG_chatbot
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "Frontend React" as FE
+actor "Benchmark Scripts\n(Python)" as BM
+
+cloud "Ollama LLM" as OLLAMA
+database "PostgreSQL" as PG
+database "Milvus Vector DB" as MILVUS
+cloud "MinIO" as MINIO
+
+package "Primary Adapters (Inbound)\n`infrastructure/adapters/input/rest`" {
+  [AuthController]
+  [AnswerModeController]
+  [QuestionModeController]
+  [ChatController]
+  [DocumentController]
+}
+
+package "Security Adapter\n`auth`" {
+  [WebSecurityConfig]
+  [AuthTokenFilter]
+  [JwtUtil]
+}
+
+package "Application Core (Hexagon)\n`application` + `domain`" {
+  package "Input Ports\n`application/ports/input`" {
+    interface ManageUserUseCase
+    interface QuestionUseCase
+    interface ChatUseCase
+  }
+
+  package "Use Cases / Services\n`application/service`" {
+    [UserService]
+    [QuestionModeService]
+    [AnswerModeService]
+    [ChatMemoryService]
+    [RetrievalService]
+    [IngestionService]
+    [UserDetailsService]
+    [AuthenticationManagerService]
+    [JwtUtilsService]
+    [TransformQueryService]
+  }
+
+  package "Output Ports\n`application/ports/output`" {
+    interface UserRepositoryPort
+    interface QuestionRepositoryPort
+    interface ChatMemoryPort
+    interface DocumentRetrievalPort
+  }
+}
+
+package "Driven Adapters (Outbound)\n`infrastructure/adapters/output`" {
+  package "Persistence Adapters\n`.../persistence/adapter`" {
+    [UserPersistenceAdapter]
+    [QuestionPersistenceAdapter]
+    [ChatMemoryPersistenceAdapter]
+  }
+
+  package "Persistence Gateways\n`.../persistence`" {
+    [DataUserRepository]
+    [GeneratedQuestionRepository]
+    [ChatMemoryRepository]
+  }
+
+  package "Chat Memory Adapter\n`.../chat`" {
+    [EncryptedChatMemory]
+    [ChatMemoryInspector]
+  }
+}
+
+package "RAG Modules\n`infrastructure/ragmodules`" {
+  [QueryTransformerModule]
+  [RewriteQueryModule]
+  [TranslationQueryModule]
+  [QueryExpansionModule]
+  [DocumentSearchModule]
+  [DocumentJoinModule]
+  [DocumentPostProcessingModule]
+}
+
+package "Infra Config\n`infrastructure/config`" {
+  [ChatClientConfig]
+  [ChatMemoryConfig]
+  [MilvusInitializer]
+  [IngestionRunner]
+  [MinioConfig]
+  [EmbeddingConfig]
+}
+
+[MinIODocumentReader] as MinioReader
+[RAGContextBuilder] as ContextBuilder
+[ChatHistoryEncryptionService] as ChatEncrypt
+
+FE --> AuthController
+FE --> AnswerModeController
+FE --> QuestionModeController
+FE --> ChatController
+FE --> DocumentController
+BM --> AnswerModeController
+
+AuthController --> ManageUserUseCase
+QuestionModeController --> QuestionUseCase
+ChatController --> ChatUseCase
+
+' Nota: en tu código actual estos dos controladores dependen de service concreto
+AnswerModeController --> AnswerModeService
+DocumentController --> RetrievalService
+
+ManageUserUseCase <|.. UserService
+QuestionUseCase <|.. QuestionModeService
+ChatUseCase <|.. ChatMemoryService
+
+UserService --> UserRepositoryPort
+UserService --> AuthenticationManagerService
+UserService --> JwtUtilsService
+UserDetailsService --> UserRepositoryPort
+
+QuestionModeService --> RetrievalService
+QuestionModeService --> QuestionRepositoryPort
+QuestionModeService --> ContextBuilder
+
+AnswerModeService --> RetrievalService
+AnswerModeService --> TransformQueryService
+AnswerModeService --> ContextBuilder
+AnswerModeService --> ChatClientConfig
+
+ChatMemoryService --> ChatMemoryPort
+
+UserRepositoryPort <|.. UserPersistenceAdapter
+QuestionRepositoryPort <|.. QuestionPersistenceAdapter
+ChatMemoryPort <|.. ChatMemoryPersistenceAdapter
+
+UserPersistenceAdapter --> DataUserRepository
+QuestionPersistenceAdapter --> GeneratedQuestionRepository
+ChatMemoryPersistenceAdapter --> ChatMemoryRepository
+
+DataUserRepository --> PG
+GeneratedQuestionRepository --> PG
+ChatMemoryRepository --> PG
+
+RetrievalService --> QueryTransformerModule
+RetrievalService --> RewriteQueryModule
+RetrievalService --> TranslationQueryModule
+RetrievalService --> QueryExpansionModule
+RetrievalService --> DocumentSearchModule
+RetrievalService --> DocumentJoinModule
+RetrievalService --> DocumentPostProcessingModule
+
+DocumentSearchModule --> MILVUS
+IngestionService --> MinioReader
+IngestionService --> MILVUS
+MinioReader --> MINIO
+
+ChatMemoryConfig --> EncryptedChatMemory
+EncryptedChatMemory --> ChatEncrypt
+EncryptedChatMemory --> PG
+
+ChatClientConfig --> OLLAMA
+QueryTransformerModule --> OLLAMA
+RewriteQueryModule --> OLLAMA
+TranslationQueryModule --> OLLAMA
+QueryExpansionModule --> OLLAMA
+
+WebSecurityConfig --> AuthTokenFilter
+AuthTokenFilter --> JwtUtil
+AuthTokenFilter --> UserDetailsService
+JwtUtilsService --> JwtUtil
+WebSecurityConfig --> UserDetailsService
+@enduml

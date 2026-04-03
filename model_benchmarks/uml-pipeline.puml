@@ -1,0 +1,77 @@
+@startuml
+title RAG_chatbot - RAG Pipeline Detail
+
+left to right direction
+skinparam componentStyle rectangle
+skinparam shadowing false
+skinparam linetype polyline
+skinparam ranksep 120
+skinparam nodesep 90
+skinparam defaultFontSize 13
+skinparam ArrowFontSize 11
+skinparam dpi 170
+
+[AnswerModeService] as AMS
+[QuestionModeService] as QMS
+[RetrievalService] as RS
+
+package "Pre-Retrieve" as PRE {
+  [TransformQueryService]
+  [QueryTransformerModule]
+  [RewriteQueryModule]
+  [TranslationQueryModule]
+  [QueryExpansionModule]
+}
+
+package "Retrieve" as RET {
+  [DocumentSearchModule]
+  [DocumentJoinModule]
+}
+
+package "Post-Retrieve" as POST {
+  [DocumentPostProcessingModule]
+  [RAGContextBuilder]
+}
+
+[ChatClientConfig]
+[ChatMemoryConfig]
+[EncryptedChatMemory]
+[ChatHistoryEncryptionService]
+
+database "Milvus" as MILVUS
+database "PostgreSQL" as PG
+cloud "Ollama" as OLLAMA
+
+' Layout helpers
+PRE -[hidden]-> RET
+RET -[hidden]-> POST
+
+AMS -right-> RS
+QMS -right-> RS
+
+AMS -down-> TransformQueryService
+TransformQueryService -down-> QueryTransformerModule
+
+RS -down-> RewriteQueryModule
+RS -down-> TranslationQueryModule
+RS -down-> QueryExpansionModule
+RS -right-> DocumentSearchModule
+RS -right-> DocumentJoinModule
+RS -right-> DocumentPostProcessingModule
+
+DocumentSearchModule -right-> MILVUS
+DocumentPostProcessingModule -down-> RAGContextBuilder
+AMS -down-> RAGContextBuilder
+QMS -down-> RAGContextBuilder
+
+QueryTransformerModule -right-> OLLAMA
+RewriteQueryModule -right-> OLLAMA
+TranslationQueryModule -right-> OLLAMA
+QueryExpansionModule -right-> OLLAMA
+AMS -right-> ChatClientConfig
+QMS -right-> ChatClientConfig
+
+ChatMemoryConfig -down-> EncryptedChatMemory
+EncryptedChatMemory -down-> ChatHistoryEncryptionService
+EncryptedChatMemory -right-> PG
+@enduml
