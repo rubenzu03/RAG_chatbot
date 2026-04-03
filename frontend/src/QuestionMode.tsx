@@ -17,6 +17,16 @@ interface HistoryEntry {
   explanation: string;
 }
 
+type ResultKind = 'correct' | 'partial' | 'incorrect';
+
+function classifyResult(result: string): ResultKind {
+  const normalized = result.toUpperCase();
+
+  if (normalized === 'CORRECTA' || normalized === 'CORRECT') return 'correct';
+  if (normalized === 'PARCIAL' || normalized === 'PARTIAL') return 'partial';
+  return 'incorrect';
+}
+
 export default function QuestionMode() {
   const [phase, setPhase] = useState<Phase>('idle');
   const [currentQuestion, setCurrentQuestion] = useState<QuestionResponse | null>(null);
@@ -24,7 +34,6 @@ export default function QuestionMode() {
   const [evaluation, setEvaluation] = useState<EvaluationResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [score, setScore] = useState({ correct: 0, partial: 0, incorrect: 0 });
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -59,14 +68,6 @@ export default function QuestionMode() {
       });
       setEvaluation(res);
 
-      // Update score
-      const r = res.result.toUpperCase();
-      setScore((prev) => ({
-        correct: prev.correct + (r === 'CORRECT' ? 1 : 0),
-        partial: prev.partial + (r === 'PARTIAL' ? 1 : 0),
-        incorrect: prev.incorrect + (r === 'INCORRECT' ? 1 : 0),
-      }));
-
       setHistory((prev) => [
         ...prev,
         {
@@ -91,22 +92,22 @@ export default function QuestionMode() {
   };
 
   const resultColor = (result: string) => {
-    const r = result.toUpperCase();
-    if (r === 'CORRECTA') return 'text-green-400';
-    if (r === 'PARCIAL') return 'text-yellow-400';
+    const kind = classifyResult(result);
+    if (kind === 'correct') return 'text-green-400';
+    if (kind === 'partial') return 'text-yellow-400';
     return 'text-red-400';
   };
 
   const resultBg = (result: string) => {
-    const r = result.toUpperCase();
-    if (r === 'CORRECTA') return 'border-green-500/40 bg-green-900/20';
-    if (r === 'PARCIAL') return 'border-yellow-500/40 bg-yellow-900/20';
+    const kind = classifyResult(result);
+    if (kind === 'correct') return 'border-green-500/40 bg-green-900/20';
+    if (kind === 'partial') return 'border-yellow-500/40 bg-yellow-900/20';
     return 'border-red-500/40 bg-red-900/20';
   };
 
   const resultIcon = (result: string) => {
-    const r = result.toUpperCase();
-    if (r === 'CORRECTA')
+    const kind = classifyResult(result);
+    if (kind === 'correct')
       return (
         <svg
           className="w-6 h-6 text-green-400"
@@ -117,7 +118,7 @@ export default function QuestionMode() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       );
-    if (r === 'PARCIAL')
+    if (kind === 'partial')
       return (
         <svg
           className="w-6 h-6 text-yellow-400"
@@ -140,21 +141,8 @@ export default function QuestionMode() {
     );
   };
 
-  // const total = score.correct + score.partial + score.incorrect;
-
   return (
     <div className="flex flex-col h-full">
-      {/* Score bar */}
-      {/* {total > 0 && (
-        <div className="flex items-center gap-4 px-6 py-3 bg-gray-800/50 border-b border-gray-700 text-sm">
-          <span className="text-gray-400 font-medium">Score:</span>
-          <span className="text-green-400 font-semibold">{score.correct} Correct</span>
-          <span className="text-yellow-400 font-semibold">{score.partial} Partial</span>
-          <span className="text-red-400 font-semibold">{score.incorrect} Incorrect</span>
-          <span className="text-gray-500 ml-auto">{total} total</span>
-        </div>
-      )} */}
-
       {/* Main scrollable area */}
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {/* History */}
@@ -323,7 +311,6 @@ export default function QuestionMode() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input area (only visible when answering) */}
       {(phase === 'answering' || phase === 'evaluating') && (
         <div className="bg-primary-dark px-5 py-4">
           <div className="relative max-w-4xl mx-auto flex items-center">

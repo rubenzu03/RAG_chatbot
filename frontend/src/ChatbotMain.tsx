@@ -155,6 +155,22 @@ export default function ChatbotMain() {
     }
   }, [messages, isLoading]);
 
+  const updateLastAssistantMessage = useCallback((transform: (content: string) => string) => {
+    setMessages((prev) => {
+      const updated = [...prev];
+      const lastIndex = updated.length - 1;
+
+      if (updated[lastIndex]?.role === 'assistant') {
+        updated[lastIndex] = {
+          ...updated[lastIndex],
+          content: transform(updated[lastIndex].content),
+        };
+      }
+
+      return updated;
+    });
+  }, []);
+
   const handleSend = async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput || isLoading) return;
@@ -169,34 +185,14 @@ export default function ChatbotMain() {
     await streamRagQuery(
       trimmedInput,
       (token) => {
-        setMessages((prev) => {
-          const updated = [...prev];
-          const lastIndex = updated.length - 1;
-          if (updated[lastIndex]?.role === 'assistant') {
-            updated[lastIndex] = {
-              ...updated[lastIndex],
-              content: updated[lastIndex].content + token,
-            };
-          }
-          return updated;
-        });
+        updateLastAssistantMessage((content) => content + token);
       },
       () => {
         setIsLoading(false);
       },
       (error) => {
         console.error('Stream error:', error);
-        setMessages((prev) => {
-          const updated = [...prev];
-          const lastIndex = updated.length - 1;
-          if (updated[lastIndex]?.role === 'assistant') {
-            updated[lastIndex] = {
-              ...updated[lastIndex],
-              content: 'Sorry, an error occurred. Please try again.',
-            };
-          }
-          return updated;
-        });
+        updateLastAssistantMessage(() => 'Sorry, an error occurred. Please try again.');
         setIsLoading(false);
       }
     );

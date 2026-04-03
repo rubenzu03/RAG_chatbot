@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { isAuthenticated, login, register } from './api';
+import Alert from './components/ui/Alert';
+import Button from './components/ui/Button';
+import Card from './components/ui/Card';
 
 type AuthMode = 'login' | 'register';
 
@@ -13,6 +16,7 @@ export default function AuthPage() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const isLogin = mode === 'login';
 
   useEffect(() => {
     if (isAuthenticated()) {
@@ -20,9 +24,18 @@ export default function AuthPage() {
     }
   }, [navigate]);
 
-  const handleAction = async () => {
+  const resetFeedback = () => {
     setError('');
     setSuccess('');
+  };
+
+  const switchMode = (nextMode: AuthMode) => {
+    setMode(nextMode);
+    resetFeedback();
+  };
+
+  const handleAction = async () => {
+    resetFeedback();
 
     if (!email || !password) {
       setError('Please fill in all required fields.');
@@ -56,21 +69,16 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen justify-center bg-primary-dark">
-      <div className="min-h-screen flex items-center justify-center bg-primary-dark">
-      <div className="w-full max-w-md bg-[#2f2f2f] rounded-2xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-primary-dark">
+      <Card className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-semibold text-gray-200">Login or signup to Chatbot</h1>
         </div>
         <div className="flex mb-6 border-b border-[#898989]">
           <button
-            onClick={() => {
-              setMode('login');
-              setError('');
-              setSuccess('');
-            }}
+            onClick={() => switchMode('login')}
             className={`flex-1 pb-3 text-center font-semibold transition-colors cursor-pointer ${
-              mode === 'login'
+              isLogin
                 ? 'text-message-user-dark border-b-2 border-message-user-dark'
                 : 'text-gray-400 hover:text-gray-300'
             }`}
@@ -78,13 +86,9 @@ export default function AuthPage() {
             Login
           </button>
           <button
-            onClick={() => {
-              setMode('register');
-              setError('');
-              setSuccess('');
-            }}
+            onClick={() => switchMode('register')}
             className={`flex-1 pb-3 text-center font-semibold transition-colors cursor-pointer ${
-              mode === 'register'
+              !isLogin
                 ? 'text-message-user-dark border-b-2 border-message-user-dark'
                 : 'text-gray-400 hover:text-gray-300'
             }`}
@@ -93,16 +97,15 @@ export default function AuthPage() {
           </button>
         </div>
 
-        {}
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/20 text-red-300 text-sm">
+          <Alert variant="error" className="mb-4">
             {error}
-          </div>
+          </Alert>
         )}
         {success && (
-          <div className="mb-4 p-3 rounded-lg bg-green-500/20 text-green-300 text-sm">
+          <Alert variant="success" className="mb-4">
             {success}
-          </div>
+          </Alert>
         )}
 
         <form
@@ -132,7 +135,7 @@ export default function AuthPage() {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg bg-[#1e1e1e] text-gray-200 border border-[#3a3a3a] focus:outline-none focus:border-message-user-dark transition-colors"
               placeholder="••••••••"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              autoComplete={isLogin ? 'current-password' : 'new-password'}
             />
           </div>
 
@@ -150,16 +153,17 @@ export default function AuthPage() {
             </div>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="mt-2 w-full py-2.5 rounded-lg bg-message-user-dark text-white font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            variant="brand"
+            fullWidth
+            className="mt-2"
           >
-            {loading ? 'Loading...' : mode === 'login' ? 'Log in' : 'Sign up'}
-          </button>
+            {loading ? 'Loading...' : isLogin ? 'Log in' : 'Sign up'}
+          </Button>
         </form>
-      </div>
-    </div>
+      </Card>
     </div>
   );
 }
