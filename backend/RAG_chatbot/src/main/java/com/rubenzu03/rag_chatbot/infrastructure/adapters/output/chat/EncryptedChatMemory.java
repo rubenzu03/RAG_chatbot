@@ -2,9 +2,12 @@ package com.rubenzu03.rag_chatbot.infrastructure.adapters.output.chat;
 
 import com.rubenzu03.rag_chatbot.infrastructure.security.ChatHistoryEncryptionService;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.messages.*;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,7 +24,7 @@ public class EncryptedChatMemory implements ChatMemory {
     @Override
     public void add(String conversationId, List<Message> messages) {
         List<Message> encryptedMessages = messages.stream()
-                .map(this::encryptMessage)
+                .map(message -> encryptMessage(message, conversationId))
                 .collect(Collectors.toList());
         delegate.add(conversationId, encryptedMessages);
     }
@@ -30,7 +33,7 @@ public class EncryptedChatMemory implements ChatMemory {
     public List<Message> get(String conversationId) {
         List<Message> encryptedMessages = delegate.get(conversationId);
         return encryptedMessages.stream()
-                .map(this::decryptMessage)
+                .map(message -> decryptMessage(message, conversationId))
                 .collect(Collectors.toList());
     }
 
@@ -39,13 +42,13 @@ public class EncryptedChatMemory implements ChatMemory {
         delegate.clear(conversationId);
     }
 
-    private Message encryptMessage(Message message) {
-        String encryptedContent = encryptionService.encrypt(message.getText());
+    private Message encryptMessage(Message message, String conversationId) {
+        String encryptedContent = encryptionService.encrypt(message.getText(), conversationId);
         return createMessage(message, encryptedContent);
     }
 
-    private Message decryptMessage(Message message) {
-        String decryptedContent = encryptionService.decrypt(message.getText());
+    private Message decryptMessage(Message message, String conversationId) {
+        String decryptedContent = encryptionService.decrypt(message.getText(), conversationId);
         return createMessage(message, decryptedContent);
     }
 
@@ -63,4 +66,3 @@ public class EncryptedChatMemory implements ChatMemory {
         }
     }
 }
-
