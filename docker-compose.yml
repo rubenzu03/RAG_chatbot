@@ -1,6 +1,5 @@
 services:
   etcd:
-    restart: always
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.25
     environment:
@@ -18,7 +17,6 @@ services:
       retries: 3
 
   minio:
-    restart: always
     container_name: milvus-minio
     image: minio/minio:RELEASE.2024-12-18T13-15-44Z
     environment:
@@ -37,12 +35,11 @@ services:
       retries: 3
 
   standalone:
-    restart: always
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.6.11
+    image: milvusdb/milvus:v2.6.13
     command: ["milvus", "run", "standalone"]
     security_opt:
-    - seccomp:unconfined
+      - seccomp:unconfined
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
@@ -74,17 +71,42 @@ services:
     #    tmpfs:
     #      size: 134217728 # 128*2^20 bytes = 128Mb
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: test1234
-      POSTGRES_DB: chatbot_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
 
   adminer:
     image: adminer
     restart: always
     ports:
       - "8081:8081"
+
+  backend:
+    build:
+      context: ./backend/RAG_chatbot
+      dockerfile: Dockerfile
+    container_name: rag-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      VECTOR_DATABASE_PORT: ${VECTOR_DATABASE_PORT}
+      VECTOR_DATABASE_HOST: ${VECTOR_DATABASE_HOST}
+      VECTOR_DATABASE_PASSWORD: ${VECTOR_DATABASE_PASSWORD}
+      VECTOR_DATABASE_USERNAME: ${VECTOR_DATABASE_USERNAME}
+      VECTOR_DATABASE_NAME: ${VECTOR_DATABASE_NAME}
+      VECTOR_DATABASE_COLLECTION_NAME: ${VECTOR_DATABASE_COLLECTION_NAME}
+      SPRING_AI_OLLAMA_BASE_URL: ${SPRING_AI_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+    depends_on:
+      - db
+      - standalone
 
 networks:
   default:
