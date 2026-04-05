@@ -32,8 +32,10 @@ public class UserService implements ManageUserUseCase {
     public String login(String email, String password) {
         Authentication authentication = authenticationManagerService.authenticate(email, password);
         Optional<UserDTO> retrievedUser = userRepositoryPort.findByEmail(email);
-        retrievedUser.ifPresent(user -> user.setLastLoginAt(new Timestamp(System.currentTimeMillis())));
-        userRepositoryPort.save(retrievedUser.orElseGet(() -> new UserDTO(email, password)));
+        retrievedUser.ifPresent(user -> {
+            user.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
+            userRepositoryPort.save(user);
+        });
         return jwtUtilsService.generateToken(authentication.getName());
     }
 
