@@ -7,6 +7,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.sql.Timestamp;
+import java.util.Optional;
+
 
 @Service
 public class UserService implements ManageUserUseCase {
@@ -28,6 +31,9 @@ public class UserService implements ManageUserUseCase {
     @Override
     public String login(String email, String password) {
         Authentication authentication = authenticationManagerService.authenticate(email, password);
+        Optional<UserDTO> retrievedUser = userRepositoryPort.findByEmail(email);
+        retrievedUser.ifPresent(user -> user.setLastLoginAt(new Timestamp(System.currentTimeMillis())));
+        userRepositoryPort.save(retrievedUser.orElseGet(() -> new UserDTO(email, password)));
         return jwtUtilsService.generateToken(authentication.getName());
     }
 
@@ -37,6 +43,8 @@ public class UserService implements ManageUserUseCase {
             throw new RuntimeException("User already exists");
         }
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
+        userDto.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+        userDto.setLastLoginAt(new Timestamp(System.currentTimeMillis()));
 
         return userRepositoryPort.save(userDto);
     }
