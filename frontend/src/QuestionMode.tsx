@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect} from 'react';
 import {
   generateQuestion,
   evaluateAnswer,
   type QuestionResponse,
   type EvaluationResponse,
+  type EvaluationResultToken,
 } from './api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,12 +20,117 @@ interface HistoryEntry {
 
 type ResultKind = 'correct' | 'partial' | 'incorrect';
 
-function classifyResult(result: string): ResultKind {
-  const normalized = result.toUpperCase();
+type UiLanguage = 'es' | 'en';
 
-  if (normalized === 'CORRECTA' || normalized === 'CORRECT') return 'correct';
-  if (normalized === 'PARCIAL' || normalized === 'PARTIAL') return 'partial';
+const uiLanguage: UiLanguage =
+  typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en';
+
+const uiText: Record<UiLanguage, Record<string, string>> = {
+  es: {
+    pageTitle: 'Chatbot Modo Preguntas',
+    errorGenerate: 'Error al generar la pregunta',
+    errorEvaluate: 'Error al evaluar la respuesta',
+    questionLabel: 'Pregunta',
+    yourAnswer: 'Tu respuesta:',
+    explanation: 'Explicación:',
+    questionsMode: 'Modo Preguntas',
+    questionsIntro: 'Genera preguntas basadas en tus documentos y recibe feedback inmediato sobre tus respuestas.',
+    generateQuestion: 'Generar pregunta',
+    generatingQuestion: 'Generando pregunta...',
+    analyzingDocuments: 'Analizando tus documentos...',
+    nextQuestion: 'Siguiente pregunta',
+    answerPlaceholder: 'Escribe tu respuesta... (Enter para enviar, Shift+Enter para nueva línea)',
+    submitAnswer: 'Enviar respuesta',
+    resultCorrect: 'Correcto',
+    resultPartial: 'Parcial',
+    resultIncorrect: 'Incorrecto',
+  },
+  en: {
+    pageTitle: 'Chatbot Question Mode',
+    errorGenerate: 'Error generating question',
+    errorEvaluate: 'Error evaluating answer',
+    questionLabel: 'Question',
+    yourAnswer: 'Your answer:',
+    explanation: 'Explanation:',
+    questionsMode: 'Questions Mode',
+    questionsIntro: 'Generate questions based on your documents and get instant feedback on your answers.',
+    generateQuestion: 'Generate Question',
+    generatingQuestion: 'Generating question...',
+    analyzingDocuments: 'Analyzing your documents...',
+    nextQuestion: 'Next Question',
+    answerPlaceholder: 'Write your answer... (Enter to submit, Shift+Enter for new line)',
+    submitAnswer: 'Submit answer',
+    resultCorrect: 'Correct',
+    resultPartial: 'Partial',
+    resultIncorrect: 'Incorrect',
+  },
+};
+
+function normalizeResultToken(result: string): EvaluationResultToken {
+  const normalized = result
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase();
+
+  if (normalized.includes('INCORRECT')) return 'INCORRECT';
+  if (normalized.includes('PARTIAL') || normalized.includes('PARCIAL')) return 'PARTIAL';
+  if (normalized.includes('CORRECT')) return 'CORRECT';
+  return 'INCORRECT';
+}
+
+function classifyResult(result: string): ResultKind {
+  const normalized = normalizeResultToken(result);
+
+  if (normalized === 'CORRECT') return 'correct';
+  if (normalized === 'PARTIAL') return 'partial';
   return 'incorrect';
+}
+
+function resultLabel(result: string): string {
+  const token = normalizeResultToken(result);
+  if (token === 'CORRECT') return uiText[uiLanguage].resultCorrect;
+  if (token === 'PARTIAL') return uiText[uiLanguage].resultPartial;
+  return uiText[uiLanguage].resultIncorrect;
+}
+
+function extractExplanationText(raw: string): string {
+  if (!raw) return '';
+  const s = raw.trim();
+
+  if ((s.startsWith('{') && s.endsWith('}')) || (s.startsWith('[') && s.endsWith(']'))) {
+    try {
+      const parsed = JSON.parse(s);
+      if (typeof parsed === 'string') return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((x) => typeof x === 'string').join(' ');
+      }
+      const keys = ['explanation', 'explain', 'message', 'detail', 'description', 'texto', 'explicacion', 'explicación'];
+      for (const k of keys) {
+        if (typeof parsed[k] === 'string' && parsed[k].trim().length > 0) return parsed[k].trim();
+      }
+      const parts: string[] = [];
+      for (const v of Object.values(parsed)) {
+        if (typeof v === 'string' && v.trim().length > 0) parts.push(v.trim());
+        else if (Array.isArray(v)) parts.push(v.filter((x) => typeof x === 'string').join(' '));
+      }
+      if (parts.length > 0) return parts.join(' ');
+      return JSON.stringify(parsed);
+    } catch (e) {
+    }
+  }
+
+  const jsonStart = s.indexOf('{');
+  const jsonEnd = s.lastIndexOf('}');
+  if (jsonStart >= 0 && jsonEnd > jsonStart) {
+    const fragment = s.substring(jsonStart, jsonEnd + 1);
+    try {
+      const parsed = JSON.parse(fragment);
+      return extractExplanationText(JSON.stringify(parsed));
+    } catch (e) {
+    }
+  }
+
+  return s;
 }
 
 export default function QuestionMode() {
@@ -36,6 +142,10 @@ export default function QuestionMode() {
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    document.title = uiText[uiLanguage].pageTitle;
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -52,7 +162,7 @@ export default function QuestionMode() {
       setPhase('answering');
       setTimeout(() => inputRef.current?.focus(), 100);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error generating question');
+      setError(e instanceof Error ? e.message : uiText[uiLanguage].errorGenerate);
       setPhase('idle');
     }
   };
@@ -79,7 +189,7 @@ export default function QuestionMode() {
       ]);
       setPhase('result');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error evaluating answer');
+      setError(e instanceof Error ? e.message : uiText[uiLanguage].errorEvaluate);
       setPhase('answering');
     }
   };
@@ -151,7 +261,7 @@ export default function QuestionMode() {
             <div className="flex items-start gap-2">
               {resultIcon(entry.result)}
               <div className="flex-1">
-                <div className="text-gray-300 text-sm font-medium mb-1">Question {i + 1}</div>
+                <div className="text-gray-300 text-sm font-medium mb-1">{uiText[uiLanguage].questionLabel} {i + 1}</div>
                 <div className="text-white">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.question}</ReactMarkdown>
                 </div>
@@ -159,19 +269,19 @@ export default function QuestionMode() {
               <span
                 className={`text-xs font-bold px-2 py-1 rounded ${resultColor(entry.result)} bg-gray-800/50`}
               >
-                {entry.result}
+                {resultLabel(entry.result)}
               </span>
             </div>
             <div className="pl-8">
-              <div className="text-gray-400 text-xs font-medium mb-1">Your answer:</div>
+              <div className="text-gray-400 text-xs font-medium mb-1">{uiText[uiLanguage].yourAnswer}</div>
               <div className="text-gray-200 text-sm bg-gray-800/40 rounded-lg px-3 py-2">
                 {entry.answer}
               </div>
             </div>
             <div className="pl-8">
-              <div className="text-gray-400 text-xs font-medium mb-1">Explanation:</div>
+              <div className="text-gray-400 text-xs font-medium mb-1">{uiText[uiLanguage].explanation}</div>
               <div className="text-gray-300 text-sm">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.explanation}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{extractExplanationText(entry.explanation)}</ReactMarkdown>
               </div>
             </div>
           </div>
@@ -192,10 +302,9 @@ export default function QuestionMode() {
                 d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
               />
             </svg>
-            <h2 className="text-xl font-semibold text-gray-300 mb-2">Questions Mode</h2>
+            <h2 className="text-xl font-semibold text-gray-300 mb-2">{uiText[uiLanguage].questionsMode}</h2>
             <p className="text-center max-w-md mb-6">
-              Test your knowledge! Generate questions based on your knowledge base and get instant
-              feedback on your answers.
+              {uiText[uiLanguage].questionsIntro}
             </p>
             <button
               onClick={handleGenerate}
@@ -209,7 +318,7 @@ export default function QuestionMode() {
                   d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
-              Generate Question
+              {uiText[uiLanguage].generateQuestion}
             </button>
           </div>
         )}
@@ -235,8 +344,8 @@ export default function QuestionMode() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <p className="text-gray-300 font-medium">Generating question...</p>
-            <p className="text-sm text-gray-500 mt-1">Analyzing your knowledge base</p>
+            <p className="text-gray-300 font-medium">{uiText[uiLanguage].generatingQuestion}</p>
+            <p className="text-sm text-gray-500 mt-1">{uiText[uiLanguage].analyzingDocuments}</p>
           </div>
         )}
 
@@ -258,7 +367,7 @@ export default function QuestionMode() {
                   />
                 </svg>
                 <span className="text-blue-400 text-sm font-semibold">
-                  Question {history.length + 1}
+                  {uiText[uiLanguage].questionLabel} {history.length + 1}
                 </span>
               </div>
               <div className="text-white text-lg leading-relaxed">
@@ -276,11 +385,11 @@ export default function QuestionMode() {
               <div className="flex items-center gap-3">
                 {resultIcon(evaluation.result)}
                 <span className={`text-2xl font-bold ${resultColor(evaluation.result)}`}>
-                  {evaluation.result}
+                  {resultLabel(evaluation.result)}
                 </span>
               </div>
               <div className="text-gray-300">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{evaluation.explanation}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{extractExplanationText(evaluation.explanation)}</ReactMarkdown>
               </div>
             </div>
             <div className="flex justify-center mt-6">
@@ -296,7 +405,7 @@ export default function QuestionMode() {
                     d="M13 10V3L4 14h7v7l9-11h-7z"
                   />
                 </svg>
-                Next Question
+                {uiText[uiLanguage].nextQuestion}
               </button>
             </div>
           </div>
@@ -319,7 +428,7 @@ export default function QuestionMode() {
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Write your answer... (Enter to submit, Shift+Enter for new line)"
+              placeholder={uiText[uiLanguage].answerPlaceholder}
               disabled={phase === 'evaluating'}
               rows={2}
               className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
@@ -329,7 +438,7 @@ export default function QuestionMode() {
               onClick={handleEvaluate}
               disabled={!answer.trim() || phase === 'evaluating'}
               className="absolute right-3 p-2 bg-green-600 hover:bg-green-700 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
-              title="Submit answer"
+              title={uiText[uiLanguage].submitAnswer}
             >
               {phase === 'evaluating' ? (
                 <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">

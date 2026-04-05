@@ -202,8 +202,10 @@ export interface EvaluationRequest {
   answer: string;
 }
 
+export type EvaluationResultToken = 'CORRECT' | 'PARTIAL' | 'INCORRECT';
+
 export interface EvaluationResponse {
-  result: string; // "CORRECTA" | "INCORRECTA" | "PARCIAL"
+  result: EvaluationResultToken | string;
   explanation: string;
 }
 

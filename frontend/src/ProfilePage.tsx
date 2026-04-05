@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearChatHistory, deleteAccount, getCurrentUserEmail, logout } from './api';
 import Alert from './components/ui/Alert';
@@ -11,6 +11,10 @@ export default function ProfilePage() {
   const [busyAction, setBusyAction] = useState<'clear' | 'delete' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = 'Profile Management' + (currentUserEmail ? ` - ${currentUserEmail}` : ''); 
+  }, [currentUserEmail]);
 
   const resetFeedback = () => {
     setError(null);
@@ -65,21 +69,20 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-primary-dark px-4 py-10 text-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-primary-dark px-4 py-10 text-gray-100">
       <Card className="mx-auto w-full max-w-2xl p-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold">Profile Management</h1>
             <p className="mt-1 text-sm text-gray-400">Manage your session and account actions.</p>
           </div>
-          <Button onClick={handleBackToChat} variant="secondary" className="text-sm font-medium">
+          <Button onClick={handleBackToChat} variant="secondary" className="text-sm font-medium px-3 py-1.5">
             Back to chat
           </Button>
         </div>
-
-        <Card className="mb-6 rounded-xl bg-[#1f1f1f] p-4 shadow-none">
+        <Card className="mb-6 rounded-xl bg-[#1f1f1f] p-4 shadow-none flex flex-col items-center text-center">
           <p className="text-xs uppercase tracking-wide text-gray-400">Current user</p>
-          <p className="mt-2 break-all text-base font-medium text-gray-100">
+          <p className="mt-2 text-sm font-medium text-gray-100 text-center max-w-xs truncate">
             {currentUserEmail ?? 'Unknown user'}
           </p>
         </Card>
@@ -95,14 +98,12 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        <div className="space-y-3">
+        <div className="flex flex-col items-center sm:flex-row sm:justify-center sm:items-center gap-2">
           <Button
             onClick={handleClearHistory}
             disabled={busyAction !== null}
             variant="primary"
-            fullWidth
-            align="left"
-            className="py-3"
+            className="px-3 py-1.5 text-sm"
           >
             {busyAction === 'clear' ? 'Deleting chat history...' : 'Delete Data'}
           </Button>
@@ -111,9 +112,7 @@ export default function ProfilePage() {
             onClick={handleLogout}
             disabled={busyAction !== null}
             variant="secondary"
-            fullWidth
-            align="left"
-            className="py-3"
+            className="px-3 py-1.5 text-sm"
           >
             Logout
           </Button>
@@ -122,9 +121,7 @@ export default function ProfilePage() {
             onClick={handleDeleteAccount}
             disabled={busyAction !== null}
             variant="danger"
-            fullWidth
-            align="left"
-            className="py-3"
+            className="px-3 py-1.5 text-sm"
           >
             {busyAction === 'delete' ? 'Deleting account...' : 'Delete Account'}
           </Button>

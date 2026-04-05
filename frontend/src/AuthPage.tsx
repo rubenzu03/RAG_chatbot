@@ -19,6 +19,10 @@ export default function AuthPage() {
   const isLogin = mode === 'login';
 
   useEffect(() => {
+    document.title = 'AI-Powered Study Assistant Login / Register';
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated()) {
       navigate('/chat', { replace: true });
     }
@@ -72,7 +76,7 @@ export default function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-primary-dark">
       <Card className="w-full max-w-md p-8">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold text-gray-200">Login or signup to Chatbot</h1>
+          <h1 className="text-2xl font-semibold text-gray-200">Login or signup to AI-Powered Study Assistant</h1>
         </div>
         <div className="flex mb-6 border-b border-[#898989]">
           <button
