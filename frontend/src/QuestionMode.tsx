@@ -219,49 +219,35 @@ export default function QuestionMode() {
     const kind = classifyResult(result);
     if (kind === 'correct')
       return (
-        <svg
-          className="w-6 h-6 text-green-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg aria-hidden="true" focusable="false" className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       );
     if (kind === 'partial')
       return (
-        <svg
-          className="w-6 h-6 text-yellow-400"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg aria-hidden="true" focusable="false" className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
         </svg>
       );
     return (
-      <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M6 18L18 6M6 6l12 12"
-        />
+      <svg aria-hidden="true" focusable="false" className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
       </svg>
     );
   };
 
   return (
     <div className="flex flex-col h-full">
+      <h1 id="questions-page-title" className="sr-only">{uiText[uiLanguage].questionsMode}</h1>
       {/* Main scrollable area */}
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div id="questions-panel" role="region" aria-labelledby="questions-page-title" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {/* History */}
         {history.map((entry, i) => (
-          <div key={i} className={`rounded-xl border p-4 space-y-3 ${resultBg(entry.result)}`}>
+          <div key={i} role="article" aria-labelledby={`question-${i + 1}`} className={`rounded-xl border p-4 space-y-3 ${resultBg(entry.result)}`}>
             <div className="flex items-start gap-2">
               {resultIcon(entry.result)}
               <div className="flex-1">
-                <div className="text-gray-300 text-sm font-medium mb-1">{uiText[uiLanguage].questionLabel} {i + 1}</div>
+                <div id={`question-${i + 1}`} className="text-gray-300 text-sm font-medium mb-1">{uiText[uiLanguage].questionLabel} {i + 1}</div>
                 <div className="text-white">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.question}</ReactMarkdown>
                 </div>
@@ -289,12 +275,7 @@ export default function QuestionMode() {
 
         {phase === 'idle' && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <svg
-              className="w-16 h-16 mb-4 text-gray-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg aria-hidden="true" focusable="false" className="w-16 h-16 mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -308,15 +289,11 @@ export default function QuestionMode() {
             </p>
             <button
               onClick={handleGenerate}
+              aria-controls="current-question"
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
-                />
+              <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               {uiText[uiLanguage].generateQuestion}
             </button>
@@ -351,20 +328,10 @@ export default function QuestionMode() {
 
         {(phase === 'answering' || phase === 'evaluating') && currentQuestion && (
           <div className="max-w-3xl mx-auto space-y-4">
-            <div className="bg-gray-800/60 rounded-xl border border-gray-700 p-5">
+            <div id="current-question" aria-live="polite" className="bg-gray-800/60 rounded-xl border border-gray-700 p-5">
               <div className="flex items-center gap-2 mb-3">
-                <svg
-                  className="w-5 h-5 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
+                <svg aria-hidden="true" focusable="false" className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="text-blue-400 text-sm font-semibold">
                   {uiText[uiLanguage].questionLabel} {history.length + 1}
@@ -381,7 +348,7 @@ export default function QuestionMode() {
 
         {phase === 'result' && evaluation && (
           <div className="max-w-3xl mx-auto">
-            <div className={`rounded-xl border p-5 space-y-4 ${resultBg(evaluation.result)}`}>
+            <div id="result-panel" role="status" aria-live="polite" aria-atomic="true" className={`rounded-xl border p-5 space-y-4 ${resultBg(evaluation.result)}`}>
               <div className="flex items-center gap-3">
                 {resultIcon(evaluation.result)}
                 <span className={`text-2xl font-bold ${resultColor(evaluation.result)}`}>
@@ -395,15 +362,11 @@ export default function QuestionMode() {
             <div className="flex justify-center mt-6">
               <button
                 onClick={handleGenerate}
+                aria-controls="current-question"
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
-                  />
+                <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 {uiText[uiLanguage].nextQuestion}
               </button>
@@ -412,9 +375,9 @@ export default function QuestionMode() {
         )}
 
         {error && (
-          <div className="max-w-3xl mx-auto bg-red-900/30 border border-red-500/40 rounded-xl p-4 text-red-300 text-sm">
+          <Alert variant="error" id="questions-error" className="max-w-3xl mx-auto mb-4">
             {error}
-          </div>
+          </Alert>
         )}
 
         <div ref={bottomRef} />
@@ -429,6 +392,7 @@ export default function QuestionMode() {
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={uiText[uiLanguage].answerPlaceholder}
+              aria-label={uiText[uiLanguage].yourAnswer}
               disabled={phase === 'evaluating'}
               rows={2}
               className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
@@ -436,12 +400,13 @@ export default function QuestionMode() {
             />
             <button
               onClick={handleEvaluate}
+              aria-label={uiText[uiLanguage].submitAnswer}
               disabled={!answer.trim() || phase === 'evaluating'}
               className="absolute right-3 p-2 bg-green-600 hover:bg-green-700 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
               title={uiText[uiLanguage].submitAnswer}
             >
               {phase === 'evaluating' ? (
-                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <svg aria-hidden="true" focusable="false" className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -457,7 +422,7 @@ export default function QuestionMode() {
                   />
                 </svg>
               ) : (
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

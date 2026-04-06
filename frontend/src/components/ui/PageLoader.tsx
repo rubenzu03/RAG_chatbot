@@ -5,8 +5,8 @@ interface PageLoaderProps {
 export default function PageLoader({ message = 'Loading...' }: PageLoaderProps) {
   return (
     <div className="min-h-screen bg-primary-dark flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3 text-gray-300">
-        <svg className="animate-spin h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
+      <div role="status" aria-live="polite" aria-atomic="true" className="flex flex-col items-center gap-3 text-gray-300">
+        <svg aria-hidden="true" focusable="false" className="animate-spin h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24">
           <circle
             className="opacity-25"
             cx="12"

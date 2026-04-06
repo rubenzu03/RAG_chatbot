@@ -25,14 +25,14 @@ function CopyButton({ code }: { code: string }) {
     >
       {copied ? (
         <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           Copied!
         </>
       ) : (
         <>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -211,14 +211,18 @@ export default function ChatbotMain() {
         <h1 className="text-2xl font-bold text-white">Chatbot</h1>
 
         {/* Mode switcher tabs */}
-        <div className="flex ml-8 bg-gray-900/50 rounded-lg p-1">
+        <div className="flex ml-8 bg-gray-900/50 rounded-lg p-1" role="tablist" aria-label="View mode">
           <button
+            id="tab-chat"
+            role="tab"
+            aria-selected={mode === 'chat'}
+            aria-controls="chat-panel"
             onClick={() => setMode('chat')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1.5 ${
               mode === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -229,12 +233,16 @@ export default function ChatbotMain() {
             Chat
           </button>
           <button
+            id="tab-questions"
+            role="tab"
+            aria-selected={mode === 'questions'}
+            aria-controls="questions-panel"
             onClick={() => setMode('questions')}
             className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-1.5 ${
               mode === 'questions' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -254,13 +262,17 @@ export default function ChatbotMain() {
         </button>
       </div>
       {mode === 'questions' ? (
-        <div className="flex-1 overflow-hidden bg-primary-dark">
+        <div id="questions-panel" role="region" aria-labelledby="tab-questions" aria-hidden={mode !== 'questions'} className="flex-1 overflow-hidden bg-primary-dark">
           <QuestionMode />
         </div>
       ) : (
-        <>
+        <div id="chat-panel" role="region" aria-labelledby="tab-chat" aria-hidden={mode !== 'chat'} className="flex-1 flex flex-col">
           <div
             ref={messagesContainerRef}
+            role="log"
+            aria-live="polite"
+            aria-atomic={false}
+            aria-label="Conversation log"
             className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark"
           >
             {messages.length === 0 ? (
@@ -277,6 +289,8 @@ export default function ChatbotMain() {
                 {messages.map((message, index) => (
                   <div
                     key={index}
+                    role="article"
+                    aria-label={`${message.role === 'user' ? 'User' : 'Assistant'} message`}
                     className={`flex ${
                       message.role === 'user' ? 'justify-end' : 'justify-start'
                     } animate-fade-in`}
@@ -297,7 +311,7 @@ export default function ChatbotMain() {
                             {normalizeMarkdown(message.content)}
                           </ReactMarkdown>
                         ) : (
-                          <span className="inline-flex gap-1">
+                          <span className="inline-flex gap-1" aria-hidden="true">
                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                             <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
@@ -328,6 +342,7 @@ export default function ChatbotMain() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+                aria-label="Type your message"
                 disabled={isLoading}
                 rows={2}
                 className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
@@ -337,11 +352,12 @@ export default function ChatbotMain() {
               />
               <button
                 onClick={handleSend}
+                aria-label="Send message"
                 disabled={!input.trim() || isLoading}
                 className="absolute right-3 p-2 bg-message-user-dark hover:bg-blue-600 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
               >
                 {isLoading ? (
-                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <svg aria-hidden="true" focusable="false" className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -363,13 +379,13 @@ export default function ChatbotMain() {
             </div>
           </div>
           {/* AI Content warning */}
-          <div className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200">
+          <div role="note" className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200">
             <p>
               Content generated by AI may not be accurate or reliable. Please verify information
               from trusted sources. Do not share sensitive personal information. Use responsibly.
             </p>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

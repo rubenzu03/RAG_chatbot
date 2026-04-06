@@ -69,36 +69,36 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-primary-dark px-4 py-10 text-gray-100">
-      <Card className="mx-auto w-full max-w-2xl p-6">
+    <main aria-labelledby="profile-heading" className="min-h-screen flex items-center justify-center bg-primary-dark px-4 py-10 text-gray-100">
+      <Card role="region" aria-labelledby="profile-heading" aria-busy={busyAction !== null} className="mx-auto w-full max-w-2xl p-6">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold">Profile Management</h1>
+            <h1 id="profile-heading" className="text-2xl font-semibold">Profile Management</h1>
             <p className="mt-1 text-sm text-gray-400">Manage your session and account actions.</p>
           </div>
           <Button onClick={handleBackToChat} variant="secondary" className="text-sm font-medium px-3 py-1.5">
             Back to chat
           </Button>
         </div>
-        <Card className="mb-6 rounded-xl bg-[#1f1f1f] p-4 shadow-none flex flex-col items-center text-center">
-          <p className="text-xs uppercase tracking-wide text-gray-400">Current user</p>
-          <p className="mt-2 text-sm font-medium text-gray-100 text-center max-w-xs truncate">
+        <Card role="region" aria-labelledby="current-user-label" className="mb-6 rounded-xl bg-[#1f1f1f] p-4 shadow-none flex flex-col items-center text-center">
+          <p id="current-user-label" className="text-xs uppercase tracking-wide text-gray-400">Current user</p>
+          <p aria-label="current user email" className="mt-2 text-sm font-medium text-gray-100 text-center max-w-xs truncate">
             {currentUserEmail ?? 'Unknown user'}
           </p>
         </Card>
 
         {error && (
-          <Alert variant="error" className="mb-4">
+          <Alert variant="error" id="profile-error" className="mb-4">
             {error}
           </Alert>
         )}
         {success && (
-          <Alert variant="success" className="mb-4">
+          <Alert variant="success" id="profile-success" className="mb-4">
             {success}
           </Alert>
         )}
 
-        <div className="flex flex-col items-center sm:flex-row sm:justify-center sm:items-center gap-2">
+        <div role="group" aria-label="Account actions" className="flex flex-col items-center sm:flex-row sm:justify-center sm:items-center gap-2">
           <Button
             onClick={handleClearHistory}
             disabled={busyAction !== null}
@@ -122,15 +122,16 @@ export default function ProfilePage() {
             disabled={busyAction !== null}
             variant="danger"
             className="px-3 py-1.5 text-sm"
+            aria-describedby="delete-warning"
           >
             {busyAction === 'delete' ? 'Deleting account...' : 'Delete Account'}
           </Button>
         </div>
 
-        <p className="mt-4 text-xs text-gray-500">
+        <p id="delete-warning" className="mt-4 text-xs text-gray-500">
           Deleting your account is permanent and cannot be undone.
         </p>
       </Card>
-    </div>
+    </main>
   );
 }
