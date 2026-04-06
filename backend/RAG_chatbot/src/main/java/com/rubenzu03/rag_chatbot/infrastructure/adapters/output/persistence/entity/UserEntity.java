@@ -14,8 +14,10 @@ public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, length = 1024)
     private String email;
+    @Column(unique = true, nullable = false, length = 64)
+    private String emailHash;
     @Column(nullable = false)
     private String password;
     private Timestamp createdAt;

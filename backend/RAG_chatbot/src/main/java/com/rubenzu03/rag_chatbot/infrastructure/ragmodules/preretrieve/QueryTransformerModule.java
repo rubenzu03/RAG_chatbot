@@ -48,11 +48,11 @@ public class QueryTransformerModule {
                 .build();
     }
 
-    public Query transformQuery(String rawQuery, String userId) {
-        List<Message> historyMessages = getConversationHistory(userId);
+    public Query transformQuery(String rawQuery, String conversationId) {
+        List<Message> historyMessages = getConversationHistory(conversationId);
 
         log.info("=== QueryTransformer Debug ===");
-        log.info("User ID: {}", userId);
+        log.info("Conversation ID: {}", conversationId);
         log.info("Raw Query: {}", rawQuery);
         log.info("History messages count: {}", historyMessages.size());
 
@@ -81,10 +81,10 @@ public class QueryTransformerModule {
         return transformedQuery;
     }
 
-    private List<Message> getConversationHistory(String userId) {
-        if (userId == null || userId.isBlank()) {
+    private List<Message> getConversationHistory(String conversationId) {
+        if (conversationId == null || conversationId.isBlank()) {
             return Collections.emptyList();
         }
-        return chatMemory.get(userId);
+        return chatMemory.get(conversationId);
     }
 }

@@ -65,3 +65,8 @@ build/
 /rag_files
 .DS_Store
 backend/RAG_chatbot/src/main/resources/env.properties
+*.csv
+model_benchmarks/common_knowledge_dataset.json
+model_benchmarks/output.json
+model_benchmarks/programming_dataset.json
+*.csv
