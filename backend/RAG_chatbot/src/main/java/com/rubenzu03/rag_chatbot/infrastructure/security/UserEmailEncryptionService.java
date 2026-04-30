@@ -56,7 +56,8 @@ public class UserEmailEncryptionService {
             SECURE_RANDOM.nextBytes(iv);
 
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, ALGORITHM), new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, ALGORITHM),
+                    new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
             byte[] encryptedBytes = cipher.doFinal(normalized.getBytes(StandardCharsets.UTF_8));
 
             ByteBuffer payload = ByteBuffer.allocate(iv.length + encryptedBytes.length);
@@ -87,11 +88,11 @@ public class UserEmailEncryptionService {
             byteBuffer.get(cipherText);
 
             Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, ALGORITHM), new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
+            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, ALGORITHM),
+                    new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
             return new String(cipher.doFinal(cipherText), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            return encryptedEmail;
+            throw new RuntimeException("Email decryption failed. Data integrity may be compromised.", e);
         }
     }
 }
-

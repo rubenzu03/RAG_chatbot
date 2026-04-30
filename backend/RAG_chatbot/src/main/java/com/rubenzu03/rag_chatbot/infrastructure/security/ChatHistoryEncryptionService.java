@@ -65,7 +65,7 @@ public class ChatHistoryEncryptionService {
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, ALGORITHM), new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv));
             return new String(cipher.doFinal(cipherText), StandardCharsets.UTF_8);
         } catch (Exception e) {
-            return encryptedData;
+            throw new RuntimeException("Chat history decryption failed. Data integrity may be compromised.", e);
         }
     }
 }

@@ -17,9 +17,12 @@ public class ConversationEncryptionKeyService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final ChatEncryptionKeyRepository chatEncryptionKeyRepository;
+    private final MasterKeyEncryptionService masterKeyEncryptionService;
 
-    public ConversationEncryptionKeyService(ChatEncryptionKeyRepository chatEncryptionKeyRepository) {
+    public ConversationEncryptionKeyService(ChatEncryptionKeyRepository chatEncryptionKeyRepository,
+            MasterKeyEncryptionService masterKeyEncryptionService) {
         this.chatEncryptionKeyRepository = chatEncryptionKeyRepository;
+        this.masterKeyEncryptionService = masterKeyEncryptionService;
     }
 
     @Transactional
@@ -29,7 +32,7 @@ public class ConversationEncryptionKeyService {
                 : conversationId.trim();
 
         return chatEncryptionKeyRepository.findById(safeConversationId)
-                .map(entity -> Base64.getDecoder().decode(entity.getKeyMaterial()))
+                .map(entity -> masterKeyEncryptionService.unwrapKey(entity.getKeyMaterial()))
                 .orElseGet(() -> createAndPersist(safeConversationId));
     }
 
@@ -39,7 +42,7 @@ public class ConversationEncryptionKeyService {
 
         ChatEncryptionKeyEntity entity = new ChatEncryptionKeyEntity();
         entity.setConversationId(conversationId);
-        entity.setKeyMaterial(Base64.getEncoder().encodeToString(rawKey));
+        entity.setKeyMaterial(masterKeyEncryptionService.wrapKey(rawKey));
         entity.setCreatedAt(Timestamp.from(Instant.now()));
         chatEncryptionKeyRepository.save(entity);
 

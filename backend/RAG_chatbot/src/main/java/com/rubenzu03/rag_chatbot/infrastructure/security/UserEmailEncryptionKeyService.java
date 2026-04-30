@@ -17,15 +17,17 @@ public class UserEmailEncryptionKeyService {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserEmailEncryptionKeyRepository userEmailEncryptionKeyRepository;
+    private final MasterKeyEncryptionService masterKeyEncryptionService;
 
-    public UserEmailEncryptionKeyService(UserEmailEncryptionKeyRepository userEmailEncryptionKeyRepository) {
+    public UserEmailEncryptionKeyService(UserEmailEncryptionKeyRepository userEmailEncryptionKeyRepository, MasterKeyEncryptionService masterKeyEncryptionService) {
         this.userEmailEncryptionKeyRepository = userEmailEncryptionKeyRepository;
+        this.masterKeyEncryptionService = masterKeyEncryptionService;
     }
 
     @Transactional
     public byte[] getOrCreateKey(String emailHash) {
         return userEmailEncryptionKeyRepository.findById(emailHash)
-                .map(entity -> Base64.getDecoder().decode(entity.getKeyMaterial()))
+                .map(entity -> masterKeyEncryptionService.unwrapKey(entity.getKeyMaterial()))
                 .orElseGet(() -> createAndPersist(emailHash));
     }
 
@@ -35,7 +37,7 @@ public class UserEmailEncryptionKeyService {
 
         UserEmailEncryptionKeyEntity entity = new UserEmailEncryptionKeyEntity();
         entity.setEmailHash(emailHash);
-        entity.setKeyMaterial(Base64.getEncoder().encodeToString(rawKey));
+        entity.setKeyMaterial(masterKeyEncryptionService.wrapKey(rawKey));
         entity.setCreatedAt(Timestamp.from(Instant.now()));
         userEmailEncryptionKeyRepository.save(entity);
 
