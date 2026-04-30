@@ -25,14 +25,28 @@ function CopyButton({ code }: { code: string }) {
     >
       {copied ? (
         <>
-          <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           Copied!
         </>
       ) : (
         <>
-          <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            aria-hidden="true"
+            focusable="false"
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -98,13 +112,8 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
   },
 };
 
-// Fix for markdown rendering
-function normalizeMarkdown(text: string): string {
-  return text
-    .replace(/([^\n])(\d+\.\s)/g, '$1\n\n$2')
-    .replace(/([^\n])([-*+]\s)/g, '$1\n\n$2')
-    .replace(/\n{3,}/g, '\n\n');
-}
+// We removed normalizeMarkdown as ReactMarkdown with remark-gfm handles standard markdown correctly.
+// The real issue was in api.ts where SSE chunks were prepended with spaces, breaking markdown rendering.
 
 export default function ChatbotMain() {
   const [mode, setMode] = useState<AppMode>('chat');
@@ -211,7 +220,11 @@ export default function ChatbotMain() {
         <h1 className="text-2xl font-bold text-white">Chatbot</h1>
 
         {/* Mode switcher tabs */}
-        <div className="flex ml-8 bg-gray-900/50 rounded-lg p-1" role="tablist" aria-label="View mode">
+        <div
+          className="flex ml-8 bg-gray-900/50 rounded-lg p-1"
+          role="tablist"
+          aria-label="View mode"
+        >
           <button
             id="tab-chat"
             role="tab"
@@ -222,7 +235,14 @@ export default function ChatbotMain() {
               mode === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -242,7 +262,14 @@ export default function ChatbotMain() {
               mode === 'questions' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <svg aria-hidden="true" focusable="false" className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -262,11 +289,23 @@ export default function ChatbotMain() {
         </button>
       </div>
       {mode === 'questions' ? (
-        <div id="questions-panel" role="region" aria-labelledby="tab-questions" aria-hidden={mode !== 'questions'} className="flex-1 overflow-hidden bg-primary-dark">
+        <div
+          id="questions-panel"
+          role="region"
+          aria-labelledby="tab-questions"
+          aria-hidden={mode !== 'questions'}
+          className="flex-1 overflow-hidden bg-primary-dark"
+        >
           <QuestionMode />
         </div>
       ) : (
-        <div id="chat-panel" role="region" aria-labelledby="tab-chat" aria-hidden={mode !== 'chat'} className="flex-1 flex flex-col">
+        <div
+          id="chat-panel"
+          role="region"
+          aria-labelledby="tab-chat"
+          aria-hidden={mode !== 'chat'}
+          className="flex-1 flex flex-col"
+        >
           <div
             ref={messagesContainerRef}
             role="log"
@@ -308,7 +347,7 @@ export default function ChatbotMain() {
                             remarkPlugins={[remarkGfm]}
                             components={markdownComponents}
                           >
-                            {normalizeMarkdown(message.content)}
+                            {message.content}
                           </ReactMarkdown>
                         ) : (
                           <span className="inline-flex gap-1" aria-hidden="true">
@@ -357,7 +396,13 @@ export default function ChatbotMain() {
                 className="absolute right-3 p-2 bg-message-user-dark hover:bg-blue-600 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
               >
                 {isLoading ? (
-                  <svg aria-hidden="true" focusable="false" className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    aria-hidden="true"
+                    focusable="false"
+                    className="animate-spin h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -379,7 +424,10 @@ export default function ChatbotMain() {
             </div>
           </div>
           {/* AI Content warning */}
-          <div role="note" className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200">
+          <div
+            role="note"
+            className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200"
+          >
             <p>
               Content generated by AI may not be accurate or reliable. Please verify information
               from trusted sources. Do not share sensitive personal information. Use responsibly.

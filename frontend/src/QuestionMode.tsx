@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect} from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   generateQuestion,
   evaluateAnswer,
@@ -8,6 +8,7 @@ import {
 } from './api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import Alert from './components/ui/Alert';
 
 type Phase = 'idle' | 'loading-question' | 'answering' | 'evaluating' | 'result';
 
@@ -23,7 +24,9 @@ type ResultKind = 'correct' | 'partial' | 'incorrect';
 type UiLanguage = 'es' | 'en';
 
 const uiLanguage: UiLanguage =
-  typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('es') ? 'es' : 'en';
+  typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('es')
+    ? 'es'
+    : 'en';
 
 const uiText: Record<UiLanguage, Record<string, string>> = {
   es: {
@@ -34,7 +37,8 @@ const uiText: Record<UiLanguage, Record<string, string>> = {
     yourAnswer: 'Tu respuesta:',
     explanation: 'Explicación:',
     questionsMode: 'Modo Preguntas',
-    questionsIntro: 'Genera preguntas basadas en tus documentos y recibe feedback inmediato sobre tus respuestas.',
+    questionsIntro:
+      'Genera preguntas basadas en tus documentos y recibe feedback inmediato sobre tus respuestas.',
     generateQuestion: 'Generar pregunta',
     generatingQuestion: 'Generando pregunta...',
     analyzingDocuments: 'Analizando tus documentos...',
@@ -53,7 +57,8 @@ const uiText: Record<UiLanguage, Record<string, string>> = {
     yourAnswer: 'Your answer:',
     explanation: 'Explanation:',
     questionsMode: 'Questions Mode',
-    questionsIntro: 'Generate questions based on your documents and get instant feedback on your answers.',
+    questionsIntro:
+      'Generate questions based on your documents and get instant feedback on your answers.',
     generateQuestion: 'Generate Question',
     generatingQuestion: 'Generating question...',
     analyzingDocuments: 'Analyzing your documents...',
@@ -104,7 +109,16 @@ function extractExplanationText(raw: string): string {
       if (Array.isArray(parsed)) {
         return parsed.filter((x) => typeof x === 'string').join(' ');
       }
-      const keys = ['explanation', 'explain', 'message', 'detail', 'description', 'texto', 'explicacion', 'explicación'];
+      const keys = [
+        'explanation',
+        'explain',
+        'message',
+        'detail',
+        'description',
+        'texto',
+        'explicacion',
+        'explicación',
+      ];
       for (const k of keys) {
         if (typeof parsed[k] === 'string' && parsed[k].trim().length > 0) return parsed[k].trim();
       }
@@ -115,8 +129,7 @@ function extractExplanationText(raw: string): string {
       }
       if (parts.length > 0) return parts.join(' ');
       return JSON.stringify(parsed);
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   const jsonStart = s.indexOf('{');
@@ -126,8 +139,7 @@ function extractExplanationText(raw: string): string {
     try {
       const parsed = JSON.parse(fragment);
       return extractExplanationText(JSON.stringify(parsed));
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   return s;
@@ -219,35 +231,75 @@ export default function QuestionMode() {
     const kind = classifyResult(result);
     if (kind === 'correct')
       return (
-        <svg aria-hidden="true" focusable="false" className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          className="w-6 h-6 text-green-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       );
     if (kind === 'partial')
       return (
-        <svg aria-hidden="true" focusable="false" className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg
+          aria-hidden="true"
+          focusable="false"
+          className="w-6 h-6 text-yellow-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01" />
         </svg>
       );
     return (
-      <svg aria-hidden="true" focusable="false" className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      <svg
+        aria-hidden="true"
+        focusable="false"
+        className="w-6 h-6 text-red-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M6 18L18 6M6 6l12 12"
+        />
       </svg>
     );
   };
 
   return (
     <div className="flex flex-col h-full">
-      <h1 id="questions-page-title" className="sr-only">{uiText[uiLanguage].questionsMode}</h1>
+      <h1 id="questions-page-title" className="sr-only">
+        {uiText[uiLanguage].questionsMode}
+      </h1>
       {/* Main scrollable area */}
-      <div id="questions-panel" role="region" aria-labelledby="questions-page-title" className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+      <div
+        id="questions-panel"
+        role="region"
+        aria-labelledby="questions-page-title"
+        className="flex-1 overflow-y-auto px-6 py-6 space-y-6"
+      >
         {/* History */}
         {history.map((entry, i) => (
-          <div key={i} role="article" aria-labelledby={`question-${i + 1}`} className={`rounded-xl border p-4 space-y-3 ${resultBg(entry.result)}`}>
+          <div
+            key={i}
+            role="article"
+            aria-labelledby={`question-${i + 1}`}
+            className={`rounded-xl border p-4 space-y-3 ${resultBg(entry.result)}`}
+          >
             <div className="flex items-start gap-2">
               {resultIcon(entry.result)}
               <div className="flex-1">
-                <div id={`question-${i + 1}`} className="text-gray-300 text-sm font-medium mb-1">{uiText[uiLanguage].questionLabel} {i + 1}</div>
+                <div id={`question-${i + 1}`} className="text-gray-300 text-sm font-medium mb-1">
+                  {uiText[uiLanguage].questionLabel} {i + 1}
+                </div>
                 <div className="text-white">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{entry.question}</ReactMarkdown>
                 </div>
@@ -259,15 +311,21 @@ export default function QuestionMode() {
               </span>
             </div>
             <div className="pl-8">
-              <div className="text-gray-400 text-xs font-medium mb-1">{uiText[uiLanguage].yourAnswer}</div>
+              <div className="text-gray-400 text-xs font-medium mb-1">
+                {uiText[uiLanguage].yourAnswer}
+              </div>
               <div className="text-gray-200 text-sm bg-gray-800/40 rounded-lg px-3 py-2">
                 {entry.answer}
               </div>
             </div>
             <div className="pl-8">
-              <div className="text-gray-400 text-xs font-medium mb-1">{uiText[uiLanguage].explanation}</div>
+              <div className="text-gray-400 text-xs font-medium mb-1">
+                {uiText[uiLanguage].explanation}
+              </div>
               <div className="text-gray-300 text-sm">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{extractExplanationText(entry.explanation)}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {extractExplanationText(entry.explanation)}
+                </ReactMarkdown>
               </div>
             </div>
           </div>
@@ -275,7 +333,14 @@ export default function QuestionMode() {
 
         {phase === 'idle' && (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
-            <svg aria-hidden="true" focusable="false" className="w-16 h-16 mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              className="w-16 h-16 mb-4 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -283,17 +348,29 @@ export default function QuestionMode() {
                 d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
               />
             </svg>
-            <h2 className="text-xl font-semibold text-gray-300 mb-2">{uiText[uiLanguage].questionsMode}</h2>
-            <p className="text-center max-w-md mb-6">
-              {uiText[uiLanguage].questionsIntro}
-            </p>
+            <h2 className="text-xl font-semibold text-gray-300 mb-2">
+              {uiText[uiLanguage].questionsMode}
+            </h2>
+            <p className="text-center max-w-md mb-6">{uiText[uiLanguage].questionsIntro}</p>
             <button
               onClick={handleGenerate}
               aria-controls="current-question"
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
             >
-              <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
               </svg>
               {uiText[uiLanguage].generateQuestion}
             </button>
@@ -328,10 +405,26 @@ export default function QuestionMode() {
 
         {(phase === 'answering' || phase === 'evaluating') && currentQuestion && (
           <div className="max-w-3xl mx-auto space-y-4">
-            <div id="current-question" aria-live="polite" className="bg-gray-800/60 rounded-xl border border-gray-700 p-5">
+            <div
+              id="current-question"
+              aria-live="polite"
+              className="bg-gray-800/60 rounded-xl border border-gray-700 p-5"
+            >
               <div className="flex items-center gap-2 mb-3">
-                <svg aria-hidden="true" focusable="false" className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  className="w-5 h-5 text-blue-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 <span className="text-blue-400 text-sm font-semibold">
                   {uiText[uiLanguage].questionLabel} {history.length + 1}
@@ -348,7 +441,13 @@ export default function QuestionMode() {
 
         {phase === 'result' && evaluation && (
           <div className="max-w-3xl mx-auto">
-            <div id="result-panel" role="status" aria-live="polite" aria-atomic="true" className={`rounded-xl border p-5 space-y-4 ${resultBg(evaluation.result)}`}>
+            <div
+              id="result-panel"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              className={`rounded-xl border p-5 space-y-4 ${resultBg(evaluation.result)}`}
+            >
               <div className="flex items-center gap-3">
                 {resultIcon(evaluation.result)}
                 <span className={`text-2xl font-bold ${resultColor(evaluation.result)}`}>
@@ -356,7 +455,9 @@ export default function QuestionMode() {
                 </span>
               </div>
               <div className="text-gray-300">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{extractExplanationText(evaluation.explanation)}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {extractExplanationText(evaluation.explanation)}
+                </ReactMarkdown>
               </div>
             </div>
             <div className="flex justify-center mt-6">
@@ -365,8 +466,20 @@ export default function QuestionMode() {
                 aria-controls="current-question"
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors duration-200 flex items-center gap-2"
               >
-                <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
                 {uiText[uiLanguage].nextQuestion}
               </button>
@@ -406,7 +519,13 @@ export default function QuestionMode() {
               title={uiText[uiLanguage].submitAnswer}
             >
               {phase === 'evaluating' ? (
-                <svg aria-hidden="true" focusable="false" className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  className="animate-spin h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
                   <circle
                     className="opacity-25"
                     cx="12"
@@ -422,7 +541,14 @@ export default function QuestionMode() {
                   />
                 </svg>
               ) : (
-                <svg aria-hidden="true" focusable="false" className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
