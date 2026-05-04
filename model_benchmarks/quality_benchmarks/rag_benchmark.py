@@ -41,7 +41,7 @@ load_env_parent()
 API_URL = os.environ.get("RAG_API_URL", "http://localhost:8080/api/ai/ragquery")
 DATASET = resolve_path_parent(os.environ.get("RAG_DATASET", "programming_dataset.json"))
 TOKEN= resolve_path_parent(os.environ.get("BEARER_TOKEN"))
-RESULTS_CSV = resolve_path_parent(os.environ.get("RAG_RESULTS_CSV", "results.csv"))
+RESULTS_CSV = resolve_path_parent(os.environ.get("RAG_RESULTS_CSV", "results_commonknowledge_RAG.csv"))
 MODEL_NAME = resolve_path_parent(os.environ.get("MODEL_NAME"))
 BENCH_CONVERSATION_PREFIX = os.environ.get("BENCH_CONVERSATION_PREFIX", "rag")
 BENCH_ISOLATE_CONVERSATIONS = os.environ.get("BENCH_ISOLATE_CONVERSATIONS", "true").lower() in ("1", "true", "yes")
@@ -116,42 +116,9 @@ def load_dataset(path):
     raise TypeError("Unsupported dataset format: expected object or array")
 
 
-def sanitize_text(text):
-    if not text:
-        return ""
-    text = re.sub(r"(?m)^\s*data:\s*", "", text)
-    text = "".join(ch for ch in text if ch.isprintable() or ch in "\n\t")
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def extract_sse_chunk_text(payload):
-    if not payload:
-        return ""
-
-    try:
-        obj = json.loads(payload)
-    except Exception:
-        return sanitize_text(payload)
-
-    if isinstance(obj, str):
-        return sanitize_text(obj)
-
-    if isinstance(obj, dict):
-        for key in ("response", "answer", "result", "text", "content", "message"):
-            value = obj.get(key)
-            if isinstance(value, str):
-                return sanitize_text(value)
-
-        choices = obj.get("choices")
-        if isinstance(choices, list) and choices:
-            first = choices[0]
-            if isinstance(first, dict):
-                if isinstance(first.get("text"), str):
-                    return sanitize_text(first["text"])
-                message = first.get("message")
-                if isinstance(message, dict) and isinstance(message.get("content"), str):
-                    return sanitize_text(message["content"])
-
+def process_sse_line(line):
+    if line.startswith("data:"):
+        return line[5:]
     return ""
 
 def embedding_similarity(answer: str, truth: str) -> float:
@@ -313,15 +280,12 @@ def main(limit=None):
                 for line in resp.iter_lines(decode_unicode=True):
                     if not line:
                         continue
-                    text = line[len("data:"):].lstrip() if line.startswith("data:") else line
-                    if not text or text == "[DONE]":
-                        continue
-
-                    chunk = extract_sse_chunk_text(text)
+                    if line == "data: [DONE]" or line == "[DONE]":
+                        break
+                    
+                    chunk = process_sse_line(line)
                     if chunk:
                         collected.append(chunk)
-                    else:
-                        collected.append(sanitize_text(text))
 
             except KeyboardInterrupt:
                 print("interrupted")
@@ -345,7 +309,10 @@ def main(limit=None):
                 )
                 continue
 
-            response_text = extract_sse_chunk_text(" ".join(collected))
+            # Reconstruimos la conversación tal y como nos llegó,
+            # sin hacer .strip() a todos los trozos. Extraemos solo escapes básicos si hiciera falta.
+            response_text = "".join(collected).strip()
+
 
             if truth:
                 s_embed = round(embedding_similarity(response_text, truth), 4)
