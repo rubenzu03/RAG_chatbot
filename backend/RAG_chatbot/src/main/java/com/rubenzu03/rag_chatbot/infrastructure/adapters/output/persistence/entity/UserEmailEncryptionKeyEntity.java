@@ -19,7 +19,7 @@ public class UserEmailEncryptionKeyEntity {
     @Column(nullable = false, updatable = false, length = 64)
     private String emailHash;
 
-    @Column(nullable = false, length = 64)
+    @Column(nullable = false, length = 255)
     private String keyMaterial;
 
     @Column(nullable = false)
