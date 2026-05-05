@@ -25,7 +25,6 @@ class AuthenticationManagerServiceTest {
     void authenticate_delegatesToAuthenticationManager() {
         Authentication authentication = mock(Authentication.class);
         when(authenticationManager.authenticate(any())).thenReturn(authentication);
-
         Authentication result = service.authenticate("user", "pass");
 
         assertThat(result).isSameAs(authentication);

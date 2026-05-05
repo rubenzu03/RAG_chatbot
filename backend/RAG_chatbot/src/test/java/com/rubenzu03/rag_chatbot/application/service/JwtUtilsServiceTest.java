@@ -22,7 +22,6 @@ class JwtUtilsServiceTest {
     @Test
     void generateToken_delegates() {
         when(jwtUtil.generateToken("user")).thenReturn("token");
-
         String token = service.generateToken("user");
 
         assertThat(token).isEqualTo("token");

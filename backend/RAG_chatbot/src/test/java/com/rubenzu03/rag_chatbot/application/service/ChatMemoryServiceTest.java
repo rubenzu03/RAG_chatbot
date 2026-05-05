@@ -26,7 +26,6 @@ class ChatMemoryServiceTest {
     @Test
     void getHistory_delegates() {
         when(chatMemoryPort.getHistory("user")).thenReturn(List.of(new ChatResponse("hi", "user")));
-
         List<ChatResponse> history = service.getHistory("user");
 
         assertThat(history).hasSize(1);
@@ -35,14 +34,12 @@ class ChatMemoryServiceTest {
     @Test
     void deleteHistory_delegates() {
         service.deleteHistory("user");
-
         verify(chatMemoryPort).deleteHistoryById("user");
     }
 
     @Test
     void deleteAllHistory_delegates() {
         service.deleteAllHistory();
-
         verify(chatMemoryPort).deleteAllHistory();
     }
 }
