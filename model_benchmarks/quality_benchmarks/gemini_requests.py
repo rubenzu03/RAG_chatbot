@@ -15,6 +15,7 @@ from bert_score import BERTScorer
 from transformers import pipeline as hf_pipeline
 
 from google import genai
+from google.genai import types
 
 def load_env_parent(env_name=".env"):
     parent = Path(__file__).resolve().parent.parent
@@ -46,8 +47,12 @@ API_KEY = os.environ.get("GOOGLE_API_KEY")
 
 
 GEMINI_CLIENT = genai.Client()
+GEMINI_CLIENT = genai.Client()
+GEMINI_SYSTEM_PROMPT = os.environ.get(
+    "GEMINI_SYSTEM_PROMPT",
+    "Answer briefly and directly. Be precise. Go straight to the point. Do not include examples like code snippets."
+)
 
-# OPCIONES MODELO
 NLI_MODEL_NAME = os.environ.get("NLI_MODEL", "facebook/bart-large-mnli")
 BERT_SCORE_MODEL = os.environ.get("BERT_SCORE_MODEL", "distilroberta-base")
 BERT_SCORE_DEVICE = os.environ.get("BERT_SCORE_DEVICE", "cpu").lower()
@@ -268,7 +273,11 @@ def extract_response_text(payload) -> str:
 
 
 def send_to_gemini(query: str) -> str:
-    resp = GEMINI_CLIENT.models.generate_content(model=MODEL_NAME, contents=query)
+    resp = GEMINI_CLIENT.models.generate_content(
+        model=MODEL_NAME,
+        config=types.GenerateContentConfig(system_instruction=GEMINI_SYSTEM_PROMPT),
+        contents=query,
+    )
     return resp.text
 
 
