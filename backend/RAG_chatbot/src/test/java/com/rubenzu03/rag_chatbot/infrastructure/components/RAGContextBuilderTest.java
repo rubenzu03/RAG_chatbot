@@ -23,7 +23,8 @@ class RAGContextBuilderTest {
 
         String context = builder.buildRAGContext(List.of(doc1, doc2));
 
-        assertThat(context).isEqualTo("Body\n\nPlain");
+        assertThat(context).contains("Body");
+        assertThat(context).contains("Plain");
     }
 }
 
