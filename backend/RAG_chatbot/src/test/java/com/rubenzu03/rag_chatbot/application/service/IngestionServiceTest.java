@@ -9,9 +9,11 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 
+import org.mockito.Mockito;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -49,6 +51,6 @@ class IngestionServiceTest {
 
         service.ingestDocuments();
 
-        verify(vectorStore).add(anyList());
+        verify(vectorStore, times(2)).add(anyList());
     }
 }
