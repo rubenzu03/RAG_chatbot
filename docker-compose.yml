@@ -83,6 +83,23 @@ services:
     ports:
       - "8081:8081"
 
+  ollama:
+    build:
+      context: ./ollama
+      dockerfile: Dockerfile
+    container_name: rag-ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/ollama:/root/.ollama
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - OLLAMA_NUM_PARALLEL=4
+      - OLLAMA_NUM_THREAD=8
+      - OLLAMA_MODELS=${OLLAMA_MODELS:-llama3.2:latest nomic-embed-text}
+
   backend:
     build:
       context: ./backend/RAG_chatbot
@@ -103,10 +120,14 @@ services:
       VECTOR_DATABASE_USERNAME: ${VECTOR_DATABASE_USERNAME}
       VECTOR_DATABASE_NAME: ${VECTOR_DATABASE_NAME}
       VECTOR_DATABASE_COLLECTION_NAME: ${VECTOR_DATABASE_COLLECTION_NAME}
-      SPRING_AI_OLLAMA_BASE_URL: ${SPRING_AI_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      SPRING_AI_OLLAMA_BASE_URL: ${SPRING_AI_OLLAMA_BASE_URL:-http://ollama:11434}
     depends_on:
-      - db
-      - standalone
+      db:
+        condition: service_started
+      standalone:
+        condition: service_started
+      ollama:
+        condition: service_started
 
   frontend:
     build:
@@ -117,7 +138,8 @@ services:
     ports:
       - "5173:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_started
 
 networks:
   default:
