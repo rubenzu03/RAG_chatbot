@@ -1,4 +1,4 @@
-FROM node:25-alpine-3.22 AS build
+FROM node:25-alpine3.22 AS build
 WORKDIR /app
 
 COPY package.json pnpm-lock.yaml ./
