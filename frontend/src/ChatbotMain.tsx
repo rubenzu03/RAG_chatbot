@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import QuestionMode from './QuestionMode';
+import sendIcon from './assets/send-ins-line.svg';
 
 type AppMode = 'chat' | 'questions';
 
@@ -418,7 +419,7 @@ export default function ChatbotMain() {
                     />
                   </svg>
                 ) : (
-                  <img src="/src/assets/send-ins-line.svg" alt="Send" className="w-5 h-5" />
+                  <img src={sendIcon} alt="Send" className="w-5 h-5" />
                 )}
               </button>
             </div>
