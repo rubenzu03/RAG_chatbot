@@ -83,42 +83,6 @@ services:
     ports:
       - "8081:8081"
 
-  backend:
-    build:
-      context: ./backend/RAG_chatbot
-      dockerfile: Dockerfile
-    container_name: rag-backend
-    restart: always
-    ports:
-      - "8080:8080"
-    environment:
-      POSTGRES_HOST: ${POSTGRES_HOST}
-      POSTGRES_PORT: ${POSTGRES_PORT}
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      VECTOR_DATABASE_PORT: ${VECTOR_DATABASE_PORT}
-      VECTOR_DATABASE_HOST: ${VECTOR_DATABASE_HOST}
-      VECTOR_DATABASE_PASSWORD: ${VECTOR_DATABASE_PASSWORD}
-      VECTOR_DATABASE_USERNAME: ${VECTOR_DATABASE_USERNAME}
-      VECTOR_DATABASE_NAME: ${VECTOR_DATABASE_NAME}
-      VECTOR_DATABASE_COLLECTION_NAME: ${VECTOR_DATABASE_COLLECTION_NAME}
-      SPRING_AI_OLLAMA_BASE_URL: ${SPRING_AI_OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-    depends_on:
-      - db
-      - standalone
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: rag-frontend
-    restart: always
-    ports:
-      - "5173:80"
-    depends_on:
-      - backend
-
 networks:
   default:
     name: milvus
