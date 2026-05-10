@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { isAuthenticated } from './api';
+import { isAuthenticated, isTokenExpired, removeToken } from './api';
 
 interface Props {
   children: React.ReactNode;
@@ -7,8 +7,12 @@ interface Props {
 
 export default function ProtectedRoute({ children }: Props) {
   if (!isAuthenticated()) {
+    if (isTokenExpired()) {
+      removeToken();
+    }
     return <Navigate to="/auth" replace />;
   }
+  
   return <>{children}</>;
 }
 

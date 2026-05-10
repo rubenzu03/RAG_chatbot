@@ -6,7 +6,7 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import QuestionMode from './QuestionMode';
-import sendIcon from './assets/send-ins-line.svg';
+import DataPrivacyDisclosure from './DataPrivacyDisclosure';
 
 type AppMode = 'chat' | 'questions';
 
@@ -113,8 +113,6 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
   },
 };
 
-// We removed normalizeMarkdown as ReactMarkdown with remark-gfm handles standard markdown correctly.
-// The real issue was in api.ts where SSE chunks were prepended with spaces, breaking markdown rendering.
 
 export default function ChatbotMain() {
   const [mode, setMode] = useState<AppMode>('chat');
@@ -126,6 +124,7 @@ export default function ChatbotMain() {
   const autoScrollRef = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
+  const [disclosureAccepted, setDisclosureAccepted] = useState(true);
 
   useEffect(() => {
     document.title = 'Chatbot Answer Mode';
@@ -217,8 +216,9 @@ export default function ChatbotMain() {
 
   return (
     <div className="flex flex-col h-screen">
+      <DataPrivacyDisclosure onAccept={() => setDisclosureAccepted(true)} />
       <div className="flex items-center justify-start px-6 py-4 border-b border-gray-700 bg-gray-800">
-        <h1 className="text-2xl font-bold text-white">Chatbot</h1>
+        <h1 className="text-2xl font-bold text-white">{mode === 'chat' ? 'Chatbot' : 'Questions'}</h1>
 
         {/* Mode switcher tabs */}
         <div
@@ -317,7 +317,7 @@ export default function ChatbotMain() {
           >
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <h2 className="text-xl font-semibold text-gray-300 mb-2">Welcome to RAG Chatbot</h2>
+                <h2 className="text-xl font-semibold text-gray-300 mb-2">Chatbot</h2>
                 <p className="text-center max-w-md">
                   Start a conversation by typing a message below. I can help answer questions based
                   on your knowledge base.
