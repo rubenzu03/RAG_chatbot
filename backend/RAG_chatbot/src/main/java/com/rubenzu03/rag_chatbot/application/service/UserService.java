@@ -60,4 +60,9 @@ public class UserService implements ManageUserUseCase {
     public boolean checkUserExists(String email){
         return userRepositoryPort.existsByEmail(email);
     }
+
+    @Override
+    public void deleteUser(String email) {
+        userRepositoryPort.deleteByEmail(email);
+    }
 }

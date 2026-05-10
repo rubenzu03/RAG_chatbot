@@ -9,5 +9,6 @@ public interface UserRepositoryPort {
     Optional<UserDTO> findByEmail(String email);
     Optional<UserDTO> findById(Long id);
     boolean existsByEmail(String email);
+    void deleteByEmail(String email);
 }
 

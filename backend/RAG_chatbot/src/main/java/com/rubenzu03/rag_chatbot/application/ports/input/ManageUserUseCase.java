@@ -7,4 +7,5 @@ public interface ManageUserUseCase {
     UserDTO getUserProfile(Long id);
     String login(String email, String password);
     boolean checkUserExists(String email);
+    void deleteUser(String email);
 }
