@@ -36,7 +36,7 @@ services:
 
   standalone:
     container_name: milvus-standalone
-    image: milvusdb/milvus:v2.6.13
+    image: milvusdb/milvus:v2.6.15
     command: ["milvus", "run", "standalone"]
     security_opt:
       - seccomp:unconfined
@@ -93,9 +93,7 @@ services:
       - "11434:11434"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/ollama:/root/.ollama
-    runtime: nvidia
     environment:
-      - NVIDIA_VISIBLE_DEVICES=all
       - OLLAMA_NUM_PARALLEL=4
       - OLLAMA_NUM_THREAD=8
       - OLLAMA_MODELS=${OLLAMA_MODELS:-llama3.2:latest nomic-embed-text}
