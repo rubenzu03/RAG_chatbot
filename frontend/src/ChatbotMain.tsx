@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import QuestionMode from './QuestionMode';
 import DataPrivacyDisclosure from './DataPrivacyDisclosure';
+import sendIcon from './assets/send-ins-line.svg';
 
 type AppMode = 'chat' | 'questions';
 
@@ -113,7 +114,6 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
   },
 };
 
-
 export default function ChatbotMain() {
   const [mode, setMode] = useState<AppMode>('chat');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -124,7 +124,6 @@ export default function ChatbotMain() {
   const autoScrollRef = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
-  const [disclosureAccepted, setDisclosureAccepted] = useState(true);
 
   useEffect(() => {
     document.title = 'Chatbot Answer Mode';
@@ -216,9 +215,11 @@ export default function ChatbotMain() {
 
   return (
     <div className="flex flex-col h-screen">
-      <DataPrivacyDisclosure onAccept={() => setDisclosureAccepted(true)} />
+      <DataPrivacyDisclosure onAccept={() => undefined} />
       <div className="flex items-center justify-start px-6 py-4 border-b border-gray-700 bg-gray-800">
-        <h1 className="text-2xl font-bold text-white">{mode === 'chat' ? 'Chatbot' : 'Questions'}</h1>
+        <h1 className="text-2xl font-bold text-white">
+          {mode === 'chat' ? 'Chatbot' : 'Questions'}
+        </h1>
 
         {/* Mode switcher tabs */}
         <div
