@@ -2,7 +2,7 @@ package com.rubenzu03.rag_chatbot.application.service;
 
 import com.rubenzu03.rag_chatbot.application.ports.input.ChatUseCase;
 import com.rubenzu03.rag_chatbot.application.ports.output.ChatMemoryPort;
-import com.rubenzu03.rag_chatbot.domain.dto.ChatResponse;
+import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,7 +22,7 @@ public class ChatMemoryService implements ChatUseCase {
     }
 
     @Override
-    public List<ChatResponse> getHistory(String userId) {
+    public List<ChatHistoryMessage> getHistory(String userId) {
         return chatMemoryPort.getHistory(userId);
     }
 

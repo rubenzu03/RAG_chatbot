@@ -1,6 +1,8 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.input.rest;
 
 import com.rubenzu03.rag_chatbot.application.ports.input.ChatUseCase;
+import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryMessage;
+import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryResponse;
 import com.rubenzu03.rag_chatbot.domain.dto.ChatResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,11 +28,12 @@ public class ChatController {
 
 
     @GetMapping("/api/ai/chat/history")
-    public List<ChatResponse> getChatHistory(
+    public ChatHistoryResponse getChatHistory(
             @RequestParam(name = "conversationId", required = false) String conversationId){
         String userId = getAuthenticatedUserEmail();
         String conversationKey = buildConversationKey(userId, conversationId);
-        return chatUseCase.getHistory(conversationKey);
+        List<ChatHistoryMessage> history = chatUseCase.getHistory(conversationKey);
+        return new ChatHistoryResponse(history);
     }
 
     @DeleteMapping("/api/ai/chat/history")

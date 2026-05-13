@@ -1,7 +1,7 @@
 package com.rubenzu03.rag_chatbot.application.service;
 
 import com.rubenzu03.rag_chatbot.application.ports.output.ChatMemoryPort;
-import com.rubenzu03.rag_chatbot.domain.dto.ChatResponse;
+import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -25,8 +25,8 @@ class ChatMemoryServiceTest {
 
     @Test
     void getHistory_delegates() {
-        when(chatMemoryPort.getHistory("user")).thenReturn(List.of(new ChatResponse("hi", "user")));
-        List<ChatResponse> history = service.getHistory("user");
+        when(chatMemoryPort.getHistory("user")).thenReturn(List.of(new ChatHistoryMessage("user", "hi")));
+        List<ChatHistoryMessage> history = service.getHistory("user");
 
         assertThat(history).hasSize(1);
     }

@@ -41,8 +41,13 @@ public class AnswerModeService {
     }
 
     public String answerSimpleQuery(String query, String conversationKey) {
+        log.info("answerSimpleQuery() conversationKey={}", conversationKey);
         return this.chatClient.prompt(query)
-                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, conversationKey))
+                .advisors(advisor -> {
+                    advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, conversationKey);
+                    advisor.param("conversationId", conversationKey);
+                    advisor.param("conversation_id", conversationKey);
+                })
                 .call()
                 .content();
     }
@@ -65,13 +70,18 @@ public class AnswerModeService {
                 query
         );
 
+        log.info("AnswerWithRagQuery() conversationKey={} docs={}", conversationKey, rankedDocs.size());
         return chatClient.prompt()
-                .system(ChatClientConfig.ANSWER_MODE_GENERATION_PROMPT)
-                .advisors(advisor -> advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, conversationKey))
-                .user(promptWithContext)
-                .stream()
-                .content()
-                .doOnNext(token -> debugStream(token, conversationKey));
+            .system(ChatClientConfig.ANSWER_MODE_GENERATION_PROMPT)
+            .advisors(advisor -> {
+                advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, conversationKey);
+                advisor.param("conversationId", conversationKey);
+                advisor.param("conversation_id", conversationKey);
+            })
+            .user(promptWithContext)
+            .stream()
+            .content()
+            .doOnNext(token -> debugStream(token, conversationKey));
     }
 
     public String buildConversationKey(String userId, String conversationId) {

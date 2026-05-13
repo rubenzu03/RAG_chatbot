@@ -1,7 +1,8 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.input.rest;
 
 import com.rubenzu03.rag_chatbot.application.ports.input.ChatUseCase;
-import com.rubenzu03.rag_chatbot.domain.dto.ChatResponse;
+import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryMessage;
+import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,11 +37,12 @@ class ChatControllerTest {
 
     @Test
     void getChatHistory_buildsConversationKeyFromUserAndConversationId() {
-        when(chatUseCase.getHistory("user@example.com::conv")).thenReturn(List.of(new ChatResponse("hi", "user@example.com::conv")));
+        when(chatUseCase.getHistory("user@example.com::conv"))
+                .thenReturn(List.of(new ChatHistoryMessage("user", "hi")));
 
-        List<ChatResponse> history = controller.getChatHistory("conv");
+        ChatHistoryResponse history = controller.getChatHistory("conv");
 
-        assertThat(history).hasSize(1);
+        assertThat(history.history()).hasSize(1);
         verify(chatUseCase).getHistory("user@example.com::conv");
     }
 
