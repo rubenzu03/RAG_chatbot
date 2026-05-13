@@ -205,7 +205,7 @@ export async function sendMessage(message: string): Promise<ChatResponse> {
   );
 }
 
-export async function getChatHistory(): Promise<ChatMessage[]> {
+export async function getChatHistory(): Promise<ChatMessage[] | null> {
   try {
     const data = await fetchJson<{ history: ChatMessage[] }>(
       '/ai/chat/history',
@@ -215,10 +215,10 @@ export async function getChatHistory(): Promise<ChatMessage[]> {
       },
       'API request failed'
     );
-    return data.history as ChatMessage[];
+    return Array.isArray(data.history) ? (data.history as ChatMessage[]) : [];
   } catch (error) {
     console.error('Error fetching chat history:', error);
-    return [];
+    return null;
   }
 }
 

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { streamRagQuery, type ChatMessage } from './api';
+import { getChatHistory, getCurrentUserEmail, streamRagQuery, type ChatMessage } from './api';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,6 +10,60 @@ import DataPrivacyDisclosure from './DataPrivacyDisclosure';
 import sendIcon from './assets/send-ins-line.svg';
 
 type AppMode = 'chat' | 'questions';
+
+const CHAT_STATE_STORAGE_PREFIX = 'rag_chatbot_active_state';
+
+type PersistedChatState = {
+  mode: AppMode;
+  messages: ChatMessage[];
+  input: string;
+};
+
+function getChatStateStorageKey(): string {
+  const currentUserEmail = getCurrentUserEmail();
+  return currentUserEmail
+    ? `${CHAT_STATE_STORAGE_PREFIX}:${currentUserEmail}`
+    : CHAT_STATE_STORAGE_PREFIX;
+}
+
+function isValidChatMessage(message: unknown): message is ChatMessage {
+  if (!message || typeof message !== 'object') return false;
+
+  const candidate = message as { role?: unknown; content?: unknown };
+  const hasValidRole = candidate.role === 'user' || candidate.role === 'assistant';
+  return hasValidRole && typeof candidate.content === 'string';
+}
+
+function normalizeChatHistory(history: ChatMessage[]): ChatMessage[] {
+  return history.filter(isValidChatMessage);
+}
+
+function isSameHistory(left: ChatMessage[], right: ChatMessage[]): boolean {
+  if (left.length !== right.length) return false;
+
+  return left.every((message, index) => {
+    const candidate = right[index];
+    return message.role === candidate.role && message.content === candidate.content;
+  });
+}
+
+function loadPersistedChatState(storageKey: string): PersistedChatState | null {
+  try {
+    const rawState = localStorage.getItem(storageKey);
+    if (!rawState) return null;
+
+    const parsed = JSON.parse(rawState) as { mode?: unknown; messages?: unknown; input?: unknown };
+    const mode: AppMode = parsed.mode === 'questions' ? 'questions' : 'chat';
+    const messages = Array.isArray(parsed.messages)
+      ? parsed.messages.filter(isValidChatMessage)
+      : [];
+    const input = typeof parsed.input === 'string' ? parsed.input : '';
+
+    return { mode, messages, input };
+  } catch {
+    return null;
+  }
+}
 
 function CopyButton({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -115,9 +169,11 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
 };
 
 export default function ChatbotMain() {
-  const [mode, setMode] = useState<AppMode>('chat');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const storageKey = getChatStateStorageKey();
+  const persistedState = loadPersistedChatState(storageKey);
+  const [mode, setMode] = useState<AppMode>(() => persistedState?.mode ?? 'chat');
+  const [messages, setMessages] = useState<ChatMessage[]>(() => persistedState?.messages ?? []);
+  const [input, setInput] = useState(() => persistedState?.input ?? '');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -127,6 +183,47 @@ export default function ChatbotMain() {
 
   useEffect(() => {
     document.title = 'Chatbot Answer Mode';
+  }, []);
+
+  useEffect(() => {
+    const stateToPersist: PersistedChatState = {
+      mode,
+      messages,
+      input,
+    };
+
+    localStorage.setItem(storageKey, JSON.stringify(stateToPersist));
+  }, [mode, messages, input, storageKey]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const syncHistoryFromBackend = async () => {
+      const history = await getChatHistory();
+
+      if (isCancelled || history === null) return;
+
+      const normalizedHistory = normalizeChatHistory(history);
+      if (normalizedHistory.length === 0) return;
+
+      setMessages((currentMessages) => {
+        if (isSameHistory(currentMessages, normalizedHistory)) {
+          return currentMessages;
+        }
+
+        if (normalizedHistory.length <= currentMessages.length) {
+          return currentMessages;
+        }
+
+        return normalizedHistory;
+      });
+    };
+
+    syncHistoryFromBackend();
+
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   useEffect(() => {

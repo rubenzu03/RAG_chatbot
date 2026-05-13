@@ -1,9 +1,22 @@
-import { useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { clearChatHistory, deleteAccount, getCurrentUserEmail, logout } from './api';
 import Alert from './components/ui/Alert';
 import Button from './components/ui/Button';
 import Card from './components/ui/Card';
+
+const CHAT_STATE_STORAGE_PREFIX = 'rag_chatbot_active_state';
+
+function getChatStateStorageKey(): string {
+  const currentUserEmail = getCurrentUserEmail();
+  return currentUserEmail
+    ? `${CHAT_STATE_STORAGE_PREFIX}:${currentUserEmail}`
+    : CHAT_STATE_STORAGE_PREFIX;
+}
+
+function clearLocalChatState(): void {
+  localStorage.removeItem(getChatStateStorageKey());
+}
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -13,7 +26,7 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = 'Profile Management' + (currentUserEmail ? ` - ${currentUserEmail}` : ''); 
+    document.title = 'Profile Management' + (currentUserEmail ? ` - ${currentUserEmail}` : '');
   }, [currentUserEmail]);
 
   const resetFeedback = () => {
@@ -39,6 +52,7 @@ export default function ProfilePage() {
     await runBusyAction('clear', async () => {
       const ok = await clearChatHistory();
       if (ok) {
+        clearLocalChatState();
         setSuccess('Chat history deleted successfully.');
       } else {
         setError('Could not delete chat history.');
@@ -47,6 +61,7 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
+    clearLocalChatState();
     logout();
     navigate('/auth', { replace: true });
   };
@@ -61,6 +76,7 @@ export default function ProfilePage() {
     await runBusyAction('delete', async () => {
       try {
         await deleteAccount();
+        clearLocalChatState();
         navigate('/auth', { replace: true });
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not delete account.');
@@ -69,20 +85,43 @@ export default function ProfilePage() {
   };
 
   return (
-    <main aria-labelledby="profile-heading" className="min-h-screen flex items-center justify-center bg-primary-dark px-4 py-10 text-gray-100">
-      <Card role="region" aria-labelledby="profile-heading" aria-busy={busyAction !== null} className="mx-auto w-full max-w-2xl p-6">
+    <main
+      aria-labelledby="profile-heading"
+      className="min-h-screen flex items-center justify-center bg-primary-dark px-4 py-10 text-gray-100"
+    >
+      <Card
+        role="region"
+        aria-labelledby="profile-heading"
+        aria-busy={busyAction !== null}
+        className="mx-auto w-full max-w-2xl p-6"
+      >
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h1 id="profile-heading" className="text-2xl font-semibold">Profile Management</h1>
+            <h1 id="profile-heading" className="text-2xl font-semibold">
+              Profile Management
+            </h1>
             <p className="mt-1 text-sm text-gray-400">Manage your session and account actions.</p>
           </div>
-          <Button onClick={handleBackToChat} variant="secondary" className="text-sm font-medium px-3 py-1.5">
+          <Button
+            onClick={handleBackToChat}
+            variant="secondary"
+            className="text-sm font-medium px-3 py-1.5"
+          >
             Back to chat
           </Button>
         </div>
-        <Card role="region" aria-labelledby="current-user-label" className="mb-6 rounded-xl bg-[#1f1f1f] p-4 shadow-none flex flex-col items-center text-center">
-          <p id="current-user-label" className="text-xs uppercase tracking-wide text-gray-400">Current user</p>
-          <p aria-label="current user email" className="mt-2 text-sm font-medium text-gray-100 text-center max-w-xs truncate">
+        <Card
+          role="region"
+          aria-labelledby="current-user-label"
+          className="mb-6 rounded-xl bg-[#1f1f1f] p-4 shadow-none flex flex-col items-center text-center"
+        >
+          <p id="current-user-label" className="text-xs uppercase tracking-wide text-gray-400">
+            Current user
+          </p>
+          <p
+            aria-label="current user email"
+            className="mt-2 text-sm font-medium text-gray-100 text-center max-w-xs truncate"
+          >
             {currentUserEmail ?? 'Unknown user'}
           </p>
         </Card>
@@ -98,7 +137,11 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        <div role="group" aria-label="Account actions" className="flex flex-col items-center sm:flex-row sm:justify-center sm:items-center gap-2">
+        <div
+          role="group"
+          aria-label="Account actions"
+          className="flex flex-col items-center sm:flex-row sm:justify-center sm:items-center gap-2"
+        >
           <Button
             onClick={handleClearHistory}
             disabled={busyAction !== null}
