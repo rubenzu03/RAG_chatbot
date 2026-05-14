@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { memo, useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getChatHistory, getCurrentUserEmail, streamRagQuery, type ChatMessage } from './api';
 import ReactMarkdown from 'react-markdown';
@@ -18,6 +18,32 @@ type PersistedChatState = {
   messages: ChatMessage[];
   input: string;
 };
+
+type ChatMessageWithId = ChatMessage & {
+  id: string;
+  createdAt: number;
+};
+
+function generateId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function toMessageWithId(message: ChatMessage): ChatMessageWithId {
+  const candidate = message as Partial<ChatMessageWithId>;
+  return {
+    role: message.role,
+    content: message.content,
+    id: typeof candidate.id === 'string' && candidate.id.length > 0 ? candidate.id : generateId(),
+    createdAt: typeof candidate.createdAt === 'number' ? candidate.createdAt : Date.now(),
+  };
+}
+
+function stripMessageMeta(message: ChatMessageWithId): ChatMessage {
+  return {
+    role: message.role,
+    content: message.content,
+  };
+}
 
 function getChatStateStorageKey(): string {
   const currentUserEmail = getCurrentUserEmail();
@@ -168,17 +194,175 @@ const markdownComponents: React.ComponentProps<typeof ReactMarkdown>['components
   },
 };
 
+const ChatMessageItem = memo(
+  function ChatMessageItem({ message }: { message: ChatMessageWithId }) {
+    return (
+      <div
+        role="article"
+        aria-label={`${message.role === 'user' ? 'User' : 'Assistant'} message`}
+        className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+      >
+        <div
+          className={`max-w-[65%] rounded-2xl px-4 py-3 ${
+            message.role === 'user'
+              ? 'bg-message-user-dark text-white'
+              : 'bg-message-bot-dark text-gray-100'
+          }`}
+        >
+          <div className="markdown-content wrap-break-words">
+            {message.content ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {message.content}
+              </ReactMarkdown>
+            ) : (
+              <span className="inline-flex gap-1" aria-hidden="true">
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+              </span>
+            )}
+          </div>
+
+          <div className="text-xs opacity-60 mt-1">
+            {new Date(message.createdAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  },
+  (prevProps, nextProps) => {
+    const prev = prevProps.message;
+    const next = nextProps.message;
+    return prev.id === next.id && prev.content === next.content && prev.role === next.role;
+  }
+);
+
+const ChatHistoryPanel = memo(function ChatHistoryPanel({
+  messages,
+  messagesContainerRef,
+  messagesEndRef,
+}: {
+  messages: ChatMessageWithId[];
+  messagesContainerRef: React.RefObject<HTMLDivElement | null>;
+  messagesEndRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <div
+      ref={messagesContainerRef}
+      role="log"
+      aria-live="polite"
+      aria-atomic={false}
+      aria-label="Conversation log"
+      className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark"
+    >
+      {messages.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-full text-gray-400">
+          <h2 className="text-xl font-semibold text-gray-300 mb-2">Chatbot</h2>
+          <p className="text-center max-w-md">
+            Start a conversation by typing a message below. I can help answer questions based on
+            your knowledge base.
+          </p>
+        </div>
+      ) : (
+        <>
+          {messages.map((message) => (
+            <ChatMessageItem key={message.id} message={message} />
+          ))}
+          <div ref={messagesEndRef} />
+        </>
+      )}
+    </div>
+  );
+}, (prevProps, nextProps) => prevProps.messages === nextProps.messages);
+
+const ChatComposer = memo(function ChatComposer({
+  input,
+  isLoading,
+  inputRef,
+  onChange,
+  onKeyDown,
+  onSend,
+}: {
+  input: string;
+  isLoading: boolean;
+  inputRef: React.RefObject<HTMLTextAreaElement | null>;
+  onChange: (value: string) => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+  onSend: () => void;
+}) {
+  return (
+    <div className="bg-primary-dark px-5 py-4">
+      <div className="relative max-w-4xl mx-auto flex items-center">
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
+          aria-label="Type your message"
+          disabled={isLoading}
+          rows={2}
+          className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
+          style={{
+            scrollbarWidth: 'thin',
+          }}
+        />
+        <button
+          onClick={onSend}
+          aria-label="Send message"
+          disabled={!input.trim() || isLoading}
+          className="absolute right-3 p-2 bg-message-user-dark hover:bg-blue-600 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
+        >
+          {isLoading ? (
+            <svg
+              aria-hidden="true"
+              focusable="false"
+              className="animate-spin h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          ) : (
+            <img src={sendIcon} alt="Send" className="w-5 h-5" />
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}, (prevProps, nextProps) => prevProps.input === nextProps.input && prevProps.isLoading === nextProps.isLoading);
+
 export default function ChatbotMain() {
   const storageKey = getChatStateStorageKey();
   const persistedState = loadPersistedChatState(storageKey);
   const [mode, setMode] = useState<AppMode>(() => persistedState?.mode ?? 'chat');
-  const [messages, setMessages] = useState<ChatMessage[]>(() => persistedState?.messages ?? []);
+  const [messages, setMessages] = useState<ChatMessageWithId[]>(() =>
+    (persistedState?.messages ?? []).map(toMessageWithId)
+  );
   const [input, setInput] = useState(() => persistedState?.input ?? '');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef<boolean>(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const saveTimeoutRef = useRef<number | null>(null);
+  const tokenBufferRef = useRef('');
+  const rafIdRef = useRef<number | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -188,11 +372,25 @@ export default function ChatbotMain() {
   useEffect(() => {
     const stateToPersist: PersistedChatState = {
       mode,
-      messages,
+      messages: messages.map(stripMessageMeta),
       input,
     };
 
-    localStorage.setItem(storageKey, JSON.stringify(stateToPersist));
+    if (saveTimeoutRef.current !== null) {
+      window.clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = window.setTimeout(() => {
+      localStorage.setItem(storageKey, JSON.stringify(stateToPersist));
+      saveTimeoutRef.current = null;
+    }, 250);
+
+    return () => {
+      if (saveTimeoutRef.current !== null) {
+        window.clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+      }
+    };
   }, [mode, messages, input, storageKey]);
 
   useEffect(() => {
@@ -207,7 +405,8 @@ export default function ChatbotMain() {
       if (normalizedHistory.length === 0) return;
 
       setMessages((currentMessages) => {
-        if (isSameHistory(currentMessages, normalizedHistory)) {
+        const currentNormalized = currentMessages.map(stripMessageMeta);
+        if (isSameHistory(currentNormalized, normalizedHistory)) {
           return currentMessages;
         }
 
@@ -215,7 +414,7 @@ export default function ChatbotMain() {
           return currentMessages;
         }
 
-        return normalizedHistory;
+        return normalizedHistory.map(toMessageWithId);
       });
     };
 
@@ -276,39 +475,92 @@ export default function ChatbotMain() {
     });
   }, []);
 
-  const handleSend = async () => {
+  const flushTokenBuffer = useCallback(() => {
+    const chunk = tokenBufferRef.current;
+    tokenBufferRef.current = '';
+    rafIdRef.current = null;
+
+    if (!chunk) return;
+    updateLastAssistantMessage((content) => content + chunk);
+  }, [updateLastAssistantMessage]);
+
+  const handleSend = useCallback(async () => {
     const trimmedInput = input.trim();
     if (!trimmedInput || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: trimmedInput };
+    const userMessage: ChatMessageWithId = {
+      role: 'user',
+      content: trimmedInput,
+      id: generateId(),
+      createdAt: Date.now(),
+    };
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: '',
+        id: generateId(),
+        createdAt: Date.now(),
+      },
+    ]);
+
+    tokenBufferRef.current = '';
+    if (rafIdRef.current !== null) {
+      window.cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
 
     await streamRagQuery(
       trimmedInput,
       (token) => {
-        updateLastAssistantMessage((content) => content + token);
+        tokenBufferRef.current += token;
+        if (rafIdRef.current === null) {
+          rafIdRef.current = window.requestAnimationFrame(flushTokenBuffer);
+        }
       },
       () => {
+        if (rafIdRef.current !== null) {
+          window.cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        flushTokenBuffer();
         setIsLoading(false);
       },
       (error) => {
         console.error('Stream error:', error);
+        if (rafIdRef.current !== null) {
+          window.cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        tokenBufferRef.current = '';
         updateLastAssistantMessage(() => 'Sorry, an error occurred. Please try again.');
         setIsLoading(false);
       }
     );
-  };
+  }, [flushTokenBuffer, input, isLoading, updateLastAssistantMessage]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  useEffect(() => {
+    return () => {
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, []);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
-  };
+  }, [handleSend]);
+
+  const handleInputChange = useCallback((value: string) => {
+    setInput(value);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen">
@@ -405,124 +657,19 @@ export default function ChatbotMain() {
           aria-hidden={mode !== 'chat'}
           className="flex-1 flex flex-col"
         >
-          <div
-            ref={messagesContainerRef}
-            role="log"
-            aria-live="polite"
-            aria-atomic={false}
-            aria-label="Conversation log"
-            className="flex-1 overflow-y-auto px-15 py-6 space-y-4 bg-primary-dark"
-          >
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                <h2 className="text-xl font-semibold text-gray-300 mb-2">Chatbot</h2>
-                <p className="text-center max-w-md">
-                  Start a conversation by typing a message below. I can help answer questions based
-                  on your knowledge base.
-                </p>
-              </div>
-            ) : (
-              // Messages List
-              <>
-                {messages.map((message, index) => (
-                  <div
-                    key={index}
-                    role="article"
-                    aria-label={`${message.role === 'user' ? 'User' : 'Assistant'} message`}
-                    className={`flex ${
-                      message.role === 'user' ? 'justify-end' : 'justify-start'
-                    } animate-fade-in`}
-                  >
-                    <div
-                      className={`max-w-[65%] rounded-2xl px-4 py-3 ${
-                        message.role === 'user'
-                          ? 'bg-message-user-dark text-white'
-                          : 'bg-message-bot-dark text-gray-100'
-                      }`}
-                    >
-                      <div className="markdown-content wrap-break-words">
-                        {message.content ? (
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm]}
-                            components={markdownComponents}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
-                        ) : (
-                          <span className="inline-flex gap-1" aria-hidden="true">
-                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                            <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-xs opacity-60 mt-1">
-                        {new Date().toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            )}
-          </div>
-
-          {/* Input Area */}
-          <div className="bg-primary-dark px-5 py-4">
-            <div className="relative max-w-4xl mx-auto flex items-center">
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Type your message... (Press Enter to send, Shift+Enter for new line)"
-                aria-label="Type your message"
-                disabled={isLoading}
-                rows={2}
-                className="w-full bg-message-bot-dark text-white placeholder-gray-400 rounded-lg pl-4 pr-14 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed resize-none min-h-20 max-h-48"
-                style={{
-                  scrollbarWidth: 'thin',
-                }}
-              />
-              <button
-                onClick={handleSend}
-                aria-label="Send message"
-                disabled={!input.trim() || isLoading}
-                className="absolute right-3 p-2 bg-message-user-dark hover:bg-blue-600 disabled:bg-button-disabled-dark disabled:cursor-not-allowed text-white rounded-full transition-colors duration-200 flex items-center justify-center"
-              >
-                {isLoading ? (
-                  <svg
-                    aria-hidden="true"
-                    focusable="false"
-                    className="animate-spin h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                ) : (
-                  <img src={sendIcon} alt="Send" className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </div>
-          {/* AI Content warning */}
+          <ChatHistoryPanel
+            messages={messages}
+            messagesContainerRef={messagesContainerRef}
+            messagesEndRef={messagesEndRef}
+          />
+          <ChatComposer
+            input={input}
+            isLoading={isLoading}
+            inputRef={inputRef}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onSend={handleSend}
+          />
           <div
             role="note"
             className="bg-message-bot-dark px-4 py-4 text-center text-base text-gray-200"
