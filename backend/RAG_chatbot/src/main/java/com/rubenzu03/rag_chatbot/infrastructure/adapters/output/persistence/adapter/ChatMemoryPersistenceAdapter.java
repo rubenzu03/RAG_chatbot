@@ -2,6 +2,8 @@ package com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.ada
 
 import com.rubenzu03.rag_chatbot.application.ports.output.ChatMemoryPort;
 import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryMessage;
+import com.rubenzu03.rag_chatbot.infrastructure.security.ChatHistoryEncryptionService;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -17,9 +19,16 @@ import java.util.Locale;
 public class ChatMemoryPersistenceAdapter implements ChatMemoryPort {
 
     private final JdbcChatMemoryRepository chatMemoryRepository;
+    private final ChatMemory chatMemory;
+    private final ChatHistoryEncryptionService encryptionService;
 
-    public ChatMemoryPersistenceAdapter(JdbcChatMemoryRepository chatMemoryRepository) {
+    public ChatMemoryPersistenceAdapter(
+            JdbcChatMemoryRepository chatMemoryRepository,
+            ChatMemory chatMemory,
+            ChatHistoryEncryptionService encryptionService) {
         this.chatMemoryRepository = chatMemoryRepository;
+        this.chatMemory = chatMemory;
+        this.encryptionService = encryptionService;
     }
 
     @Override
@@ -34,7 +43,7 @@ public class ChatMemoryPersistenceAdapter implements ChatMemoryPort {
 
     @Override
     public List<ChatHistoryMessage> getHistory(String userId) {
-        return chatMemoryRepository.findByConversationId(userId).stream()
+        return chatMemory.get(userId).stream()
                 .map(ChatMemoryPersistenceAdapter::toHistoryMessage)
                 .toList();
     }

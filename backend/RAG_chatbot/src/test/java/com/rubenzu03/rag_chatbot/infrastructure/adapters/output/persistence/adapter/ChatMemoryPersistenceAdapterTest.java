@@ -1,6 +1,8 @@
 package com.rubenzu03.rag_chatbot.infrastructure.adapters.output.persistence.adapter;
 
 import com.rubenzu03.rag_chatbot.domain.dto.ChatHistoryMessage;
+import com.rubenzu03.rag_chatbot.infrastructure.security.ChatHistoryEncryptionService;
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.repository.jdbc.JdbcChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -25,9 +27,15 @@ class ChatMemoryPersistenceAdapterTest {
     @Mock
     private JdbcChatMemoryRepository chatMemoryRepository;
 
+    @Mock
+    private ChatMemory chatMemory;
+
+    @Mock
+    private ChatHistoryEncryptionService encryptionService;
+
     @BeforeEach
     void setUp() {
-        adapter = new ChatMemoryPersistenceAdapter(chatMemoryRepository);
+        adapter = new ChatMemoryPersistenceAdapter(chatMemoryRepository, chatMemory, encryptionService);
     }
 
     @Test
@@ -50,7 +58,7 @@ class ChatMemoryPersistenceAdapterTest {
     @Test
     void testGetHistoryWithValidUserId() {
         String userId = "user456";
-        when(chatMemoryRepository.findByConversationId(userId)).thenReturn(List.of(
+        when(chatMemory.get(userId)).thenReturn(List.of(
             new UserMessage("Hi there"),
             new AssistantMessage("How are you?")));
 
@@ -65,7 +73,7 @@ class ChatMemoryPersistenceAdapterTest {
     @Test
     void testGetHistoryReturnsEmptyList() {
         String userId = "unknown-user";
-        when(chatMemoryRepository.findByConversationId(userId)).thenReturn(List.of());
+        when(chatMemory.get(userId)).thenReturn(List.of());
 
         List<ChatHistoryMessage> result = adapter.getHistory(userId);
         assertThat(result).isEmpty();
@@ -74,10 +82,10 @@ class ChatMemoryPersistenceAdapterTest {
     @Test
     void testGetHistoryCallsRepository() {
         String userId = "user789";
-        when(chatMemoryRepository.findByConversationId(anyString())).thenReturn(List.of());
+        when(chatMemory.get(anyString())).thenReturn(List.of());
 
         adapter.getHistory(userId);
-        verify(chatMemoryRepository).findByConversationId(userId);
+        verify(chatMemory).get(userId);
     }
 
     @Test
@@ -95,7 +103,7 @@ class ChatMemoryPersistenceAdapterTest {
     @Test
     void testGetHistoryWithMultipleMessages() {
         String userId = "user-multi";
-        when(chatMemoryRepository.findByConversationId(userId)).thenReturn(List.of(
+        when(chatMemory.get(userId)).thenReturn(List.of(
             new UserMessage("Message 1"),
             new AssistantMessage("Message 2"),
             new UserMessage("Message 3"),
