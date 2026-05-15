@@ -64,21 +64,22 @@ public class AnswerModeService {
 
         log.info("Response generated with {} documents", rankedDocs.size());
 
-        String promptWithContext = String.format(
-                "Context:\n%s\n\nQuestion: %s",
-                context,
-                query
+        String systemPromptWithContext = String.format(
+                "%s\n\nContext from documents:\n%s",
+                ChatClientConfig.ANSWER_MODE_GENERATION_PROMPT,
+                context
         );
 
         log.info("AnswerWithRagQuery() conversationKey={} docs={}", conversationKey, rankedDocs.size());
+        
         return chatClient.prompt()
-            .system(ChatClientConfig.ANSWER_MODE_GENERATION_PROMPT)
+            .system(systemPromptWithContext)
             .advisors(advisor -> {
                 advisor.param(CHAT_MEMORY_CONVERSATION_ID_KEY, conversationKey);
                 advisor.param("conversationId", conversationKey);
                 advisor.param("conversation_id", conversationKey);
             })
-            .user(promptWithContext)
+            .user(query)
             .stream()
             .content()
             .doOnNext(token -> debugStream(token, conversationKey));
